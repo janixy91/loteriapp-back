@@ -100,7 +100,7 @@ const getQuantityByAmount = (amount, premio) => {
 
 const getStatus = (resStatus, premio, timestamp) => {
   let isYear = new Date(timestamp).getFullYear() === YEARNAVIDAD || new Date(timestamp).getFullYear() === YEARNINO;
-  isYear = true;
+  // isYear = true;
   let status;
 
   if (!isYear || resStatus === 0) {
