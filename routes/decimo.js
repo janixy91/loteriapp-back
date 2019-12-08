@@ -1,28 +1,18 @@
 var express = require('express');
 var router = express.Router();
 var request = require('request-promise-native');
+var YEARNAVIDAD = 2019;
+var YEARNINO = YEARNAVIDAD + 1;
 
-/* GET users listing. */
 router.get('/', async function (req, res, next) {
-
-  if (inTime(req.query.type)) {
-
-    const response = await checkOne(options, req.query.type);
-    const isYear = new Date(response.timestamp).getFullYear() === 2019 || new Date(1545498714 * 1000).getFullYear() === 2020;
-    const status = getStatus(response.status, isYear, response.premio);
-    data = getData(response, status, isYear);
-
-  } else {
-    data = {
-      error: 0,
-      amount: 0,
-      status: 'pending',
-      message: {
-        text: 'El sorteo no ha empezado',
-        title: '¡Una cosa!'
-      }
-    }
-  }
+  let data;
+  // if (inTime(req.query.type)) {
+  const response = await checkOne(req.query.code, req.query.type);
+  const status = getStatus(response.status, response.premio, response.timestamp);
+  data = getData(response, status, req.query.amount);
+  // } else {
+  //   data = getDataPending()
+  // }
   res.json(data);
 });
 
@@ -30,47 +20,25 @@ router.post('/', async function (req, res, next) {
   const decimos = req.body.data;
   if (inTime(req.query.type)) {
     let total = 0;
+    let status;
     let statusElPais;
-    let isYear;
     for (let decimo of decimos) {
       const response = await checkOne(decimo.number, req.query.type);
-      statusElPais = response.status
-      isYear = new Date(response.timestamp).getFullYear() === 2019 || new Date(1545498714 * 1000).getFullYear() === 2020;
-      const status = getStatus(response.status, isYear, response.premio);
-      if (status === 'win') {
-        total += response.premio;
+      statusElPais = response.status;
+      status = getStatus(statusElPais, response.premio, response.timestamp);
+      const premio = getQuantityByAmount(decimo.amount, response.premio);
+      if (status === 'pending') {
+        break;
+      } else if (status === 'win') {
+        total += premio;
       }
       decimo.status = status;
-      decimo.quantity = response.premio;
+      decimo.quantity = premio;
     }
-    let message;
-    if (!isYear || statusElPais === 0) {
-      message = {
-        text: 'El sorteo no ha empezado',
-        title: '¡Una cosa!'
-      }
-    } else
-      if (total > 0 && statusElPais !== 4) {
-        message = {
-          text: `¡Es posible que hayas GANADO ${total}€!, pero los datos aún no son definitivos`,
-          title: '¡Posible Premio!'
-        }
-      } else if (total > 0 && statusElPais === 4) {
-        message = {
-          text: `¡Según los datos proporcionados por EL PAIS has GANADO ${total}€!`,
-          title: '¡Premio!'
-        }
-      } else if (total === 0 && statusElPais !== 4) {
-        message = {
-          text: `Es posible que no hayas sido premiado, pero los datos aún no son definitivos`,
-          title: 'Lo sentimos'
-        }
-      } else if (total === 0 && statusElPais === 4) {
-        message = {
-          text: `Segun los datos proporcionados por EL PAIS tus décimos no han sido premiados`,
-          title: 'Lo sentimos'
-        }
-      }
+    if (status !== 'pending') {
+      status = total > 0 ? 'win' : 'lost';
+    }
+    const message = getMessage(status, total, statusElPais)
     data = {
       error: 0,
       quantity: total,
@@ -78,17 +46,7 @@ router.post('/', async function (req, res, next) {
       decimos: decimos
     }
   } else {
-    data = {
-      error: 0,
-      quantity: 0,
-      status: 'pending',
-      message: {
-        text: 'El sorteo no ha empezado',
-        title: '¡Una cosa!'
-      },
-      decimos: []
-
-    }
+    data = getDataPending()
   }
 
   res.json(data);
@@ -96,7 +54,7 @@ router.post('/', async function (req, res, next) {
 });
 
 const inTime = (type) => {
-  return ((type === 'navidad' && new Date() > new Date("2019/12/22")) || (type === 'nino' && new Date() > new Date("2020/01/6")))
+  return ((type === 'navidad' && new Date() > new Date(`${YEARNAVIDAD}/12/22`)) || (type === 'nino' && new Date() > new Date(`${YEARNINO}/01/6`)))
 }
 
 const checkOne = (number, type) => {
@@ -113,20 +71,39 @@ const checkOne = (number, type) => {
   })
 }
 
-const getData = (response, status, isYear) => {
+const getData = (response, status, amount) => {
+  const premio = getQuantityByAmount(amount, response.premio);
   return {
     error: 0,
-    amount: response.premio,
+    quantity: premio,
     status: status,
-    message: getMessage(status, isYear, response.premio, response.status)
+    message: getMessage(status, premio, response.status)
   }
-
 }
 
-const getStatus = (resStatus, isYear, premio) => {
+const getDataPending = () => {
+  return {
+    error: 0,
+    quantity: 0,
+    status: 'pending',
+    message: {
+      text: 'El sorteo no ha empezado',
+      title: '¡Una cosa!'
+    },
+    decimos: []
+  }
+}
+
+const getQuantityByAmount = (amount, premio) => {
+  return premio / 20 * amount;
+}
+
+const getStatus = (resStatus, premio, timestamp) => {
+  let isYear = new Date(timestamp).getFullYear() === YEARNAVIDAD || new Date(timestamp).getFullYear() === YEARNINO;
+  isYear = true;
   let status;
 
-  if (!isYear && resStatus === 0) {
+  if (!isYear || resStatus === 0) {
     status = 'pending'
   } else if (premio > 0) {
     status = 'win'
@@ -139,7 +116,7 @@ const getStatus = (resStatus, isYear, premio) => {
   return status;
 }
 
-const getMessage = (status, isYear, premio, responseStatus) => {
+const getMessage = (status, premio, responseStatus) => {
   let message;
 
   if (status === 'pending') {
@@ -162,12 +139,12 @@ const getMessage = (status, isYear, premio, responseStatus) => {
   } else if (status === 'lost') {
     if (responseStatus !== 4) {
       message = {
-        text: `Es posible que este decimo no haya sido premiado, pero los datos aún no son definitivos`,
+        text: `Es posible que no hayas sido premiado, pero los datos aún no son definitivos`,
         title: 'Lo sentimos'
       }
     } else {
       message = {
-        text: `Segun los datos proporcionados por ELPAIS el decimo no ha sido premiado.`,
+        text: `Segun los datos proporcionados por ELPAIS no has sido premiado.`,
         title: 'Lo sentimos'
       }
     }
