@@ -8,6 +8,7 @@ var bodyParser = require('body-parser');
 var index = require('./routes/index');
 var decimo = require('./routes/decimo');
 var cors = require('cors');
+var cron = require('./cron/premios/premios');
 
 var app = express();
 app.use(cors());
@@ -27,7 +28,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', index);
 app.use('/decimo', decimo);
-
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   var err = new Error('Not Found');
