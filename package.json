@@ -13,7 +13,7 @@
     "express": "~4.15.2",
     "firebase": "^7.6.0",
     "jade": "~1.11.0",
-    "morgan": "~1.8.1",
+    "morgan": "~1.9.1",
     "node-cron": "^2.0.3",
     "onesignal-node": "^2.1.1",
     "request": "^2.88.0",
