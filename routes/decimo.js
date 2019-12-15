@@ -63,7 +63,7 @@ const checkOne = (number, type) => {
   var options = {
     method: 'get',
     json: true,
-    url: type === 'nino' ? `http://api.elpais.com/ws/LoteriaNinoPremiados?n=${number}` : `http://api.elpais.com/ws/LoteriaNavidadPremiados?n=${number}`,
+    url: type === 'nino' ? `http://api.elpais.com/ws/LoteriaNinoPremiados?n=${parseInt(number)}` : `http://api.elpais.com/ws/LoteriaNavidadPremiados?n=${parseInt(number)}`,
   }
 
   return new Promise(resolve => {
