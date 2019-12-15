@@ -18,6 +18,7 @@ router.get('/', async function (req, res, next) {
 
 router.post('/', async function (req, res, next) {
   const decimos = req.body.data;
+
   if (inTime(req.query.type)) {
     let total = 0;
     let status;
@@ -100,7 +101,7 @@ const getQuantityByAmount = (amount, premio) => {
 }
 
 const getStatus = (resStatus, premio, timestamp) => {
-  let isYear = new Date(timestamp).getFullYear() === YEARNAVIDAD || new Date(timestamp).getFullYear() === YEARNINO;
+  let isYear = new Date(timestamp * 1000).getFullYear() === YEARNAVIDAD || new Date(timestamp * 1000).getFullYear() === YEARNINO;
   // isYear = true;
   let status;
 
