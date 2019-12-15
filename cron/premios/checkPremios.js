@@ -48,8 +48,7 @@ const _checkNavidad = async (response, type) => {
   }
 }
 
-const _checkNino = async (response) => {
-  console.log(response.premio1)
+const _checkNino = async (response, type) => {
   if (response.premio1 !== "-1" && response.premio1 !== -1) {
     await checkCreateAndPush('premio1', pad(response['premio1'], 5), type);
   }
@@ -59,28 +58,28 @@ const _checkNino = async (response) => {
   if (response.premio3 !== "-1" && response.premio3 !== -1) {
     await checkCreateAndPush('premio3', pad(response['premio3'], 5), type);
   }
-  if (response.extracciones4 !== "-1" && response.extracciones4 !== -1) {
-    await checkCreateAndPush('extracciones4', pad(response['extracciones4'], 5), type);
+  if (response.extracciones4cifras !== "-1" && response.extracciones4cifras !== -1) {
+    await checkCreateAndPush('extracciones4cifras', response['extracciones4cifras'].join(", "), type);
   }
-  if (response.extracciones3 !== "-1" && response.extracciones3 !== -1) {
-    await checkCreateAndPush('extracciones3', pad(response['extracciones3'], 5), type);
+  if (response.extracciones3cifras !== "-1" && response.extracciones3cifras !== -1) {
+    await checkCreateAndPush('extracciones3cifras', response['extracciones3cifras'].join(", "), type);
   }
-  if (response.extraciones2 !== "-1" && response.extraciones2 !== -1) {
-    await checkCreateAndPush('extraciones2', pad(response['extraciones2'], 5), type);
+  if (response.extracciones2cifras !== "-1" && response.extracciones2cifras !== -1) {
+    await checkCreateAndPush('extracciones2cifras', response['extracciones2cifras'].join(", "), type);
   }
   if (response.reintegros !== "-1" && response.reintegros !== -1) {
-    await checkCreateAndPush('reintegros', pad(response['reintegros'], 5), type);
+    await checkCreateAndPush('reintegros', response['reintegros'].join(", "), type);
   }
 }
 
-const _sendPush = (numberIndex, number) => {
+const _sendPush = (numberIndex, number, type) => {
   return new Promise(resolve => {
     var firstNotification = new OneSignal.Notification({
       contents: {
         en: _getMessage(numberIndex, number)
       },
       headings: {
-        en: "ALERTA LOTERIA DE NAVIDAD"
+        en: type === 'navidad' ? "ALERTA LOTERIA DE NAVIDAD" : "ALERTA LOTERIA DEL NIÑO"
       }
     });
     firstNotification.postBody["included_segments"] = ["Active Users", "Inactive Users"];
@@ -134,6 +133,12 @@ const _getMessage = (numberIndex, number) => {
     return `Ha salido el septimo QUINTO premio:  ${number}`
   } else if (numberIndex === "numero13") {
     return `Ha salido el octavo QUINTO premio:  ${number}`
+  } else if (numberIndex === "premio1") {
+    return `¡Ha salido el PRIMER premio!:  ${number}`
+  } else if (numberIndex === "premio2") {
+    return `Ha salido el SEGUNDO premio:  ${number}`
+  } else if (numberIndex === "premio3") {
+    return `Ha salido el TERCER premio:  ${number}`
   }
 }
 
@@ -156,9 +161,11 @@ const checkCreateAndPush = (index, number, type) => {
     firebase.database().ref(`/${type}/${index}`).once('value').then(async function (snapshot) {
       if (snapshot.val() === null) {
         _createNumberInDataBase(index, number, type);
-        await _sendPush(index, number);
+        if (index !== 'reintegros' && index !== 'extracciones2cifras' && index !== 'extracciones3cifras' && index !== 'extracciones4cifras') {
+          console.log("a push")
+          await _sendPush(index, number, type);
+        }
       }
-
       resolve();
     });
   })

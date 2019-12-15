@@ -33,6 +33,7 @@ router.post('/', async function (req, res, next) {
         total += premio;
       }
       decimo.status = status;
+      decimo.statusElPais = statusElPais;
       decimo.quantity = premio;
     }
     if (status !== 'pending') {
