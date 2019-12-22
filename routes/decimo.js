@@ -4,6 +4,7 @@ var request = require('request-promise-native');
 var YEARNAVIDAD = 2019;
 var YEARNINO = YEARNAVIDAD + 1;
 
+
 router.get('/', async function (req, res, next) {
   let data;
   if (inTime(req.query.type)) {
