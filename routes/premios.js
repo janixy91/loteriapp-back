@@ -6,7 +6,6 @@ router.get('/', async function (req, res, next) {
   const environment = process.env.environment === 'pro' ? '' : '-dev'
   console.log(process.env.environment, "process.env.environment")
   console.log(environment, "environment")
-  console.log(`/${req.query.type}${environment}`, "aa")
   firebase.database().ref(`/${req.query.type}${environment}`).once('value').then(async function (snapshot) {
     res.json(snapshot.val());
   });
