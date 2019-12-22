@@ -39,9 +39,9 @@ const _checkNavidad = async (response, type) => {
   for (let numberIndex in response) {
     count++;
     if (numberIndex === 'numero' + count) {
-      const number = pad(response[numberIndex], 5)
-      if (number !== "-1" && number !== -1) {
-        console.log("numberIndex", numberIndex)
+      console.log(response[numberIndex])
+      if (response[numberIndex] !== "-1" && response[numberIndex] !== -1) {
+        const number = pad(response[numberIndex], 5)
         await checkCreateAndPush(numberIndex, number, type);
       }
     }
@@ -79,10 +79,17 @@ const _sendPush = (numberIndex, number, type) => {
         en: _getMessage(numberIndex, number)
       },
       headings: {
-        en: type === 'navidad' ? "ALERTA LOTERIA DE NAVIDAD" : "ALERTA LOTERIA DEL NIÑO"
+        en: type === 'navidad' ? "¡HA SALIDO UN PREMIO DE LOTERIA DE NAVIDAD!" : "¡HA SALIDO UN PREMIO DE LA LOTERIA DEL NIÑO!"
       }
     });
-    firstNotification.postBody["included_segments"] = ["Active Users", "Inactive Users"];
+
+    if (process.env.environment === 'pro') {
+      console.log("por pro")
+      firstNotification.postBody["included_segments"] = ["Active Users", "Inactive Users"];
+    } else {
+      console.log("por dev")
+      firstNotification.postBody["include_player_ids"] = ["8e9fac71-5adf-41a6-985a-4444903b415f"];
+    }
 
     myClient.sendNotification(firstNotification, function (err, httpResponse, data) {
       if (err) {
@@ -94,7 +101,10 @@ const _sendPush = (numberIndex, number, type) => {
 }
 
 const _createNumberInDataBase = (numberIndex, number, type) => {
-  firebase.database().ref(`/${type}/${numberIndex}`).set({
+  const environment = process.env.environment === 'pro' ? '' : '-dev'
+  console.log(environment)
+  console.log(`/${type}${environment}/${numberIndex}`)
+  firebase.database().ref(`/${type}${environment}/${numberIndex}`).set({
     number: number,
   });
 }
@@ -108,37 +118,37 @@ function pad(n, width, z) {
 
 const _getMessage = (numberIndex, number) => {
   if (numberIndex === "numero1") {
-    return `¡Ha salido el GORDO!:  ${number}`
+    return `¡EL GORDO! Número:  ${number}`
   } else if (numberIndex === "numero2") {
-    return `Ha salido el SEGUNDO premio:  ${number}`
+    return `El SEGUNDO premio, número: ${number}`
   } else if (numberIndex === "numero3") {
-    return `Ha salido el TERCER premio:  ${number}`
+    return `El TERCER premio, número:  ${number}`
   } else if (numberIndex === "numero4") {
-    return `Ha salido el primer CUARTO premio: ${number}`
+    return `El primer CUARTO premio, número: ${number}`
   } else if (numberIndex === "numero5") {
-    return `Ha salido el segundo CUARTO premio:  ${number}`
+    return `El segundo CUARTO premio, número: ${number}`
   } else if (numberIndex === "numero6") {
-    return `Ha salido el primer QUINTO premio:  ${number}`
+    return `El primer QUINTO premio, número: ${number}`
   } else if (numberIndex === "numero7") {
-    return `Ha salido el segundo QUINTO premio:  ${number}`
+    return `El segundo QUINTO premio, número: ${number}`
   } else if (numberIndex === "numero8") {
-    return `Ha salido el tercer QUINTO premio:  ${number}`
+    return `El tercer QUINTO premio, número: ${number}`
   } else if (numberIndex === "numero9") {
-    return `Ha salido el cuarto QUINTO premio:  ${number}`
+    return `El cuarto QUINTO premio, número: ${number}`
   } else if (numberIndex === "numero10") {
-    return `Ha salido el quinto QUINTO premio:  ${number}`
+    return `El quinto QUINTO premio, número: ${number}`
   } else if (numberIndex === "numero11") {
-    return `Ha salido el sexto QUINTO premio:  ${number}`
+    return `El sexto QUINTO premio, número: ${number}`
   } else if (numberIndex === "numero12") {
-    return `Ha salido el septimo QUINTO premio:  ${number}`
+    return `El septimo QUINTO premio, número: ${number}`
   } else if (numberIndex === "numero13") {
-    return `Ha salido el octavo QUINTO premio:  ${number}`
+    return `El octavo QUINTO premio, número: ${number}`
   } else if (numberIndex === "premio1") {
-    return `¡Ha salido el PRIMER premio!:  ${number}`
+    return `¡El PRIMER premio!, Número: ${number}`
   } else if (numberIndex === "premio2") {
-    return `Ha salido el SEGUNDO premio:  ${number}`
+    return `El SEGUNDO premio, número: ${number}`
   } else if (numberIndex === "premio3") {
-    return `Ha salido el TERCER premio:  ${number}`
+    return `El TERCER premio, número: ${number}`
   }
 }
 
@@ -157,8 +167,10 @@ const getPremios = (type) => {
 }
 
 const checkCreateAndPush = (index, number, type) => {
+  const environment = process.env.environment === 'pro' ? '' : '-dev'
+
   return new Promise(resolve => {
-    firebase.database().ref(`/${type}/${index}`).once('value').then(async function (snapshot) {
+    firebase.database().ref(`/${type}${environment}/${index}`).once('value').then(async function (snapshot) {
       if (snapshot.val() === null) {
         _createNumberInDataBase(index, number, type);
         if (index !== 'reintegros' && index !== 'extracciones2cifras' && index !== 'extracciones3cifras' && index !== 'extracciones4cifras') {
