@@ -3,7 +3,9 @@ var router = express.Router();
 var firebase = require('firebase');
 
 router.get('/', async function (req, res, next) {
-  firebase.database().ref(`/${req.query.type}`).once('value').then(async function (snapshot) {
+  const environment = process.env.environment === 'pro' ? '' : '-dev'
+
+  firebase.database().ref(`/${req.query.type}${environment}`).once('value').then(async function (snapshot) {
     res.json(snapshot.val());
   });
 });

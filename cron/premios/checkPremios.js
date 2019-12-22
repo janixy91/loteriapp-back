@@ -39,9 +39,9 @@ const _checkNavidad = async (response, type) => {
   for (let numberIndex in response) {
     count++;
     if (numberIndex === 'numero' + count) {
-      const number = pad(response[numberIndex], 5)
-      if (number !== "-1" && number !== -1) {
-        console.log("numberIndex", numberIndex)
+      console.log(response[numberIndex])
+      if (response[numberIndex] !== "-1" && response[numberIndex] !== -1) {
+        const number = pad(response[numberIndex], 5)
         await checkCreateAndPush(numberIndex, number, type);
       }
     }
@@ -82,19 +82,30 @@ const _sendPush = (numberIndex, number, type) => {
         en: type === 'navidad' ? "ALERTA LOTERIA DE NAVIDAD" : "ALERTA LOTERIA DEL NIÑO"
       }
     });
-    firstNotification.postBody["included_segments"] = ["Active Users", "Inactive Users"];
 
-    myClient.sendNotification(firstNotification, function (err, httpResponse, data) {
-      if (err) {
-        console.log(err)
-      }
-      resolve();
-    });
+    if (process.env.environment === 'pro') {
+      console.log("por pro")
+      firstNotification.postBody["included_segments"] = ["Active Users", "Inactive Users"];
+    } else {
+      console.log("por dev")
+      firstNotification.postBody["include_player_ids"] = ["8e9fac71-5adf-41a6-985a-4444903b415f"];
+    }
+
+    resolve();
+    // myClient.sendNotification(firstNotification, function (err, httpResponse, data) {
+    //   if (err) {
+    //     console.log(err)
+    //   }
+    //   resolve();
+    // });
   });
 }
 
 const _createNumberInDataBase = (numberIndex, number, type) => {
-  firebase.database().ref(`/${type}/${numberIndex}`).set({
+  const environment = process.env.environment === 'pro' ? '' : '-dev'
+  console.log(environment)
+  console.log(`/${type}${environment}/${numberIndex}`)
+  firebase.database().ref(`/${type}${environment}/${numberIndex}`).set({
     number: number,
   });
 }
@@ -157,8 +168,10 @@ const getPremios = (type) => {
 }
 
 const checkCreateAndPush = (index, number, type) => {
+  const environment = process.env.environment === 'pro' ? '' : '-dev'
+
   return new Promise(resolve => {
-    firebase.database().ref(`/${type}/${index}`).once('value').then(async function (snapshot) {
+    firebase.database().ref(`/${type}${environment}/${index}`).once('value').then(async function (snapshot) {
       if (snapshot.val() === null) {
         _createNumberInDataBase(index, number, type);
         if (index !== 'reintegros' && index !== 'extracciones2cifras' && index !== 'extracciones3cifras' && index !== 'extracciones4cifras') {
