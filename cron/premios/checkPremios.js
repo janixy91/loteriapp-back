@@ -91,13 +91,12 @@ const _sendPush = (numberIndex, number, type) => {
       firstNotification.postBody["include_player_ids"] = ["8e9fac71-5adf-41a6-985a-4444903b415f"];
     }
 
-    resolve();
-    // myClient.sendNotification(firstNotification, function (err, httpResponse, data) {
-    //   if (err) {
-    //     console.log(err)
-    //   }
-    //   resolve();
-    // });
+    myClient.sendNotification(firstNotification, function (err, httpResponse, data) {
+      if (err) {
+        console.log(err)
+      }
+      resolve();
+    });
   });
 }
 
