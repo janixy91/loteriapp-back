@@ -7,7 +7,12 @@ const isCron = process.env.cron;
 console.log(process.env.environment);
 
 if (!isCron || isCron !== "no") {
-  cron.schedule('*/20 * 22,6 Jan,Dec *', () => {
+  // cron.schedule('*/20 * 22,6 Jan,Dec *', () => {
+  //   console.log('no duermas');
+  //   http.get("http://loteriapp-1.herokuapp.com/");
+  // });
+
+    cron.schedule('*/20 10,11,12,13,14,15,16,17,18,19,20,21,22 * Jan,Dec *', () => {
     console.log('no duermas');
     http.get("http://loteriapp-1.herokuapp.com/");
   });
