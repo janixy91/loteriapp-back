@@ -59,10 +59,8 @@ const _checkNino = async (response, type) => {
     await checkCreateAndPush('premio3', pad(response['premio3'], 5), type);
   }
   if (response.extracciones4cifras !== "-1" && response.extracciones4cifras !== -1) {
-<<<<<<< HEAD
-=======
+
     console.log("por aki vengo")
->>>>>>> 60afa48a3fc84d6f61b25b4af0345dde15a06f5b
     await checkCreateAndPush('extracciones4cifras', response['extracciones4cifras'].join(", "), type);
   }
   if (response.extracciones3cifras !== "-1" && response.extracciones3cifras !== -1) {
@@ -172,7 +170,6 @@ const getPremios = (type) => {
 
 const checkCreateAndPush = (index, number, type) => {
   const environment = process.env.environment === 'pro' ? '' : '-dev'
-
   console.log(index, "nidex")
   return new Promise(resolve => {
     firebase.database().ref(`/${type}${environment}/${index}`).once('value').then(async function (snapshot) {
