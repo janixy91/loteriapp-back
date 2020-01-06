@@ -49,6 +49,7 @@ const _checkNavidad = async (response, type) => {
 }
 
 const _checkNino = async (response, type) => {
+  console.log(response.extracciones4cifras, "LOLO")
   if (response.premio1 !== "-1" && response.premio1 !== -1) {
     await checkCreateAndPush('premio1', pad(response['premio1'], 5), type);
   }
@@ -58,17 +59,84 @@ const _checkNino = async (response, type) => {
   if (response.premio3 !== "-1" && response.premio3 !== -1) {
     await checkCreateAndPush('premio3', pad(response['premio3'], 5), type);
   }
-  if (response.extracciones4cifras !== "-1" && response.extracciones4cifras !== -1) {
-    await checkCreateAndPush('extracciones4cifras', response['extracciones4cifras'].join(", "), type);
+
+
+  if (response.extracciones3cifras[0] !== "-1" && response.extracciones3cifras[0] !== -1) {
+    await checkCreateAndPush('extracciones3cifras1', response['extracciones3cifras'][0], type);
   }
-  if (response.extracciones3cifras !== "-1" && response.extracciones3cifras !== -1) {
-    await checkCreateAndPush('extracciones3cifras', response['extracciones3cifras'].join(", "), type);
+  if (response.extracciones3cifras[1] !== "-1" && response.extracciones3cifras[1] !== -1) {
+    await checkCreateAndPush('extracciones3cifras2', response['extracciones3cifras'][1], type);
   }
-  if (response.extracciones2cifras !== "-1" && response.extracciones2cifras !== -1) {
-    await checkCreateAndPush('extracciones2cifras', response['extracciones2cifras'].join(", "), type);
+  if (response.extracciones3cifras[2] !== "-1" && response.extracciones3cifras[2] !== -1) {
+    await checkCreateAndPush('extracciones3cifras3', response['extracciones3cifras'][2], type);
   }
-  if (response.reintegros !== "-1" && response.reintegros !== -1) {
-    await checkCreateAndPush('reintegros', response['reintegros'].join(", "), type);
+  if (response.extracciones3cifras[3] !== "-1" && response.extracciones3cifras[3] !== -1) {
+    await checkCreateAndPush('extracciones3cifras4', response['extracciones3cifras'][3], type);
+  }
+  if (response.extracciones3cifras[4] !== "-1" && response.extracciones3cifras[4] !== -1) {
+    await checkCreateAndPush('extracciones3cifras5', response['extracciones3cifras'][4], type);
+  }
+  if (response.extracciones3cifras[5] !== "-1" && response.extracciones3cifras[5] !== -1) {
+    await checkCreateAndPush('extracciones3cifras6', response['extracciones3cifras'][5], type);
+  }
+  if (response.extracciones3cifras[6] !== "-1" && response.extracciones3cifras[6] !== -1) {
+    await checkCreateAndPush('extracciones3cifras7', response['extracciones3cifras'][6], type);
+  }
+  if (response.extracciones3cifras[7] !== "-1" && response.extracciones3cifras[7] !== -1) {
+    await checkCreateAndPush('extracciones3cifras8', response['extracciones3cifras'][7], type);
+  }
+  if (response.extracciones3cifras[8] !== "-1" && response.extracciones3cifras[8] !== -1) {
+    await checkCreateAndPush('extracciones3cifras9', response['extracciones3cifras'][8], type);
+  }
+  if (response.extracciones3cifras[9] !== "-1" && response.extracciones3cifras[9] !== -1) {
+    await checkCreateAndPush('extracciones3cifras10', response['extracciones3cifras'][9], type);
+  }
+  if (response.extracciones3cifras[10] !== "-1" && response.extracciones3cifras[10] !== -1) {
+    await checkCreateAndPush('extracciones3cifras11', response['extracciones3cifras'][10], type);
+  }
+  if (response.extracciones3cifras[11] !== "-1" && response.extracciones3cifras[11] !== -1) {
+    await checkCreateAndPush('extracciones3cifras12', response['extracciones3cifras'][11], type);
+  }
+  if (response.extracciones3cifras[12] !== "-1" && response.extracciones3cifras[12] !== -1) {
+    await checkCreateAndPush('extracciones3cifras13', response['extracciones3cifras'][12], type);
+  }
+  if (response.extracciones3cifras[13] !== "-1" && response.extracciones3cifras[13] !== -1) {
+    await checkCreateAndPush('extracciones3cifras14', response['extracciones3cifras'][13], type);
+  }
+
+
+  if (response.extracciones2cifras[0] !== "-1" && response.extracciones2cifras[0] !== -1) {
+    await checkCreateAndPush('extracciones2cifras1', response['extracciones2cifras'][0], type);
+  }
+  if (response.extracciones2cifras[1] !== "-1" && response.extracciones2cifras[1] !== -1) {
+    await checkCreateAndPush('extracciones2cifras2', response['extracciones2cifras'][1], type);
+  }
+  if (response.extracciones2cifras[2] !== "-1" && response.extracciones2cifras[2] !== -1) {
+    await checkCreateAndPush('extracciones2cifras3', response['extracciones2cifras'][2], type);
+  }
+  if (response.extracciones2cifras[3] !== "-1" && response.extracciones2cifras[3] !== -1) {
+    await checkCreateAndPush('extracciones2cifras4', response['extracciones2cifras'][3], type);
+  }
+  if (response.extracciones2cifras[4] !== "-1" && response.extracciones2cifras[4] !== -1) {
+    await checkCreateAndPush('extracciones2cifras5', response['extracciones2cifras'][4], type);
+  }
+
+
+  if (response.extracciones4cifras[0] !== "-1" && response.extracciones4cifras[0] !== -1) {
+    await checkCreateAndPush('extracciones4cifras1', response['extracciones4cifras'][0], type);
+  }
+  if (response.extracciones4cifras[1] !== "-1" && response.extracciones4cifras[1] !== -1) {
+    await checkCreateAndPush('extracciones4cifras2', response['extracciones4cifras'][1], type);
+  }
+
+  if (response.reintegros[0] !== "-1" && response.reintegros[0] !== -1) {
+    await checkCreateAndPush('reintegros1', response['reintegros'][0], type);
+  }
+  if (response.reintegros[1] !== "-1" && response.reintegros[1] !== -1) {
+    await checkCreateAndPush('reintegros2', response['reintegros'][1], type);
+  }
+  if (response.reintegros[2] !== "-1" && response.reintegros[2] !== -1) {
+    await checkCreateAndPush('reintegros3', response['reintegros'][2], type);
   }
 }
 
@@ -149,6 +217,8 @@ const _getMessage = (numberIndex, number) => {
     return `El SEGUNDO premio, número: ${number}`
   } else if (numberIndex === "premio3") {
     return `El TERCER premio, número: ${number}`
+  } else if (numberIndex.includes("reintegros")) {
+    return `Un reintegro: ${number}`
   }
 }
 
@@ -168,12 +238,16 @@ const getPremios = (type) => {
 
 const checkCreateAndPush = (index, number, type) => {
   const environment = process.env.environment === 'pro' ? '' : '-dev'
-
+  console.log(index, "nidex")
   return new Promise(resolve => {
     firebase.database().ref(`/${type}${environment}/${index}`).once('value').then(async function (snapshot) {
+      console.log(snapshot.val(), "snapshot.val()")
+      console.log(number, number)
+
       if (snapshot.val() === null) {
         _createNumberInDataBase(index, number, type);
-        if (index !== 'reintegros' && index !== 'extracciones2cifras' && index !== 'extracciones3cifras' && index !== 'extracciones4cifras') {
+        console.log(index, "indexxxxx")
+        if (!index.includes('extracciones2cifra') && !index.includes('extracciones3cifra') && !index.includes('extracciones4cifra')) {
           console.log("a push")
           await _sendPush(index, number, type);
         }
