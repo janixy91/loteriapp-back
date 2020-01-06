@@ -49,6 +49,7 @@ const _checkNavidad = async (response, type) => {
 }
 
 const _checkNino = async (response, type) => {
+  console.log(response.extracciones4cifras, "LOLO")
   if (response.premio1 !== "-1" && response.premio1 !== -1) {
     await checkCreateAndPush('premio1', pad(response['premio1'], 5), type);
   }
