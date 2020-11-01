@@ -6,7 +6,6 @@ var checkPremios = require("./checkPremios");
 const isCron = process.env.cron;
 console.log(process.env.environment);
 
-console.log("holaisCronisCronisCronisCronisCron", isCron);
 if (!isCron || isCron !== "no") {
   // cron.schedule('*/20 * 22,6 Jan,Dec *', () => {
   //   console.log('no duermas');
