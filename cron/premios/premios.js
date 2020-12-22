@@ -21,7 +21,7 @@ if (!isCron || isCron !== "no") {
   );
 
   cron.schedule("* * 22,6 Jan,Dec *", () => {
-    if (new Date().getMonth() === 10) {
+    if (new Date().getMonth() === 11) {
       console.log("go navidad");
       checkPremios("navidad");
     } else {
