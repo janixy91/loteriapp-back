@@ -118,7 +118,10 @@ const getStatus = (resStatus, premio, timestamp) => {
   // isYear = true;
   let status;
 
-  if (!isYear || resStatus === 0) {
+  console.log(resStatus, "resStatusresStatusresStatus");
+  console.log(isYear, "isYearisYearisYear");
+
+  if (!isYear) {
     status = "pending";
   } else if (premio > 0) {
     status = "win";
