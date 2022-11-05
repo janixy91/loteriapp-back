@@ -66,7 +66,7 @@ const inTime = (type) => {
 };
 
 const checkOne = (number, type) => {
-  console.log(YEARNAVIDAD, "YEARNAVIDAD3");
+  console.log(YEARNAVIDAD, "YEARNAVIDAD4");
   var options = {
     method: "get",
     json: true,
