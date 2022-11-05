@@ -1,7 +1,7 @@
 var express = require("express");
 var router = express.Router();
 var request = require("request-promise-native");
-var YEARNAVIDAD = 2021;
+var YEARNAVIDAD = 2022;
 var YEARNINO = YEARNAVIDAD + 1;
 
 router.get("/", async function (req, res, next) {
@@ -66,6 +66,7 @@ const inTime = (type) => {
 };
 
 const checkOne = (number, type) => {
+  console.log(YEARNAVIDAD, "YEARNAVIDAD");
   var options = {
     method: "get",
     json: true,
