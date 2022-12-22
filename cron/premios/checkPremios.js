@@ -226,7 +226,7 @@ const getPremios = (type) => {
   var options = {
     method: 'get',
     json: true,
-    url: type === 'nino' ? `http://api.elpais.com/ws/LoteriaNinoPremiados?n=resumen` : `http://api.elpais.com/ws/LoteriaNavidadPremiados?n=resumen`,
+    url: type === 'nino' ? `https://api.elpais.com/ws/LoteriaNinoPremiados?n=resumen` : `https://api.elpais.com/ws/LoteriaNavidadPremiados?n=resumen`,
   }
 
   return new Promise(resolve => {

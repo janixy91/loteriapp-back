@@ -72,8 +72,8 @@ const checkOne = (number, type) => {
     json: true,
     url:
       type === "nino"
-        ? `http://api.elpais.com/ws/LoteriaNinoPremiados?n=${parseInt(number)}`
-        : `http://api.elpais.com/ws/LoteriaNavidadPremiados?n=${parseInt(
+        ? `https://api.elpais.com/ws/LoteriaNinoPremiados?n=${parseInt(number)}`
+        : `https://api.elpais.com/ws/LoteriaNavidadPremiados?n=${parseInt(
             number
           )}`,
   };
