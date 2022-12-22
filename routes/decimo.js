@@ -36,7 +36,12 @@ router.post("/", async function (req, res, next) {
     let status;
     let statusElPais;
     for (let decimo of decimos) {
-      const response = await checkOne(decimo.number, req.query.type);
+      let response = null;
+      try {
+        response = await checkOne(decimo.number, req.query.type);
+      } catch (e) {
+        console.log("error333333333333", JSON.stringify(e));
+      }
       statusElPais = response.status;
       status = getStatus(statusElPais, response.premio, response.timestamp);
       const premio = getQuantityByAmount(decimo.amount, response.premio);
