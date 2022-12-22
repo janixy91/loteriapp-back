@@ -16,7 +16,7 @@ if (!isCron || isCron !== "no") {
     "*/20 10,11,12,13,14,15,16,17,18,19,20,21,22 * Jan,Dec *",
     () => {
       console.log("no duermas");
-      http.get("http://loteriapp-1.herokuapp.com/");
+      http.get("https://loteriapp-1.herokuapp.com/");
     }
   );
 
