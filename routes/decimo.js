@@ -7,7 +7,14 @@ var YEARNINO = YEARNAVIDAD + 1;
 router.get("/", async function (req, res, next) {
   let data;
   if (inTime(req.query.type)) {
-    const response = await checkOne(req.query.code, req.query.type);
+    let response = null;
+    try {
+      response = await checkOne(req.query.code, req.query.type);
+    } catch (e) {
+      console.log("este es el error", JSON.stringify(e));
+    }
+    
+    console.log(response, "responses")
     const status = getStatus(
       response.status,
       response.premio,
@@ -17,6 +24,7 @@ router.get("/", async function (req, res, next) {
   } else {
     data = getDataPending();
   }
+  console.log(data, "data")
   res.json(data);
 });
 
@@ -77,9 +85,10 @@ const checkOne = (number, type) => {
             number
           )}`,
   };
-
+  console.log(options, "options");
   return new Promise((resolve) => {
     request(options).then((responseText) => {
+      console.log(JSON.parse(responseText.replace("busqueda=", "")), "result");
       resolve(JSON.parse(responseText.replace("busqueda=", "")));
     });
   });
