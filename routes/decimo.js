@@ -1,29 +1,30 @@
 var express = require("express");
 var router = express.Router();
 var request = require("request-promise-native");
-var YEARNAVIDAD = 2023;
 
+var YEARNAVIDAD = 2023;
 var YEARNINO = YEARNAVIDAD + 1;
 
 router.get("/", async function (req, res, next) {
   let data;
-  // if (inTime(req.query.type)) {
-  let response = null;
-  try {
-    response = await checkOne(req.query.code, req.query.type);
-  } catch (e) {
-    console.log("este es el error", JSON.stringify(e));
-  }
+  if (inTime(req.query.type)) {
+    let response = null;
+    try {
+      response = await checkOne(req.query.code, req.query.type);
+    } catch (e) {
+      console.log("este es el error", JSON.stringify(e));
+    }
 
-  const status = getStatus(
-    response.status,
-    response.premio,
-    response.timestamp
-  );
-  data = getData(response, status, req.query.amount);
-  // } else {
-  //   data = getDataPending();
-  // }
+    console.log(response, "responses");
+    const status = getStatus(
+      response.status,
+      response.premio,
+      response.timestamp
+    );
+    data = getData(response, status, req.query.amount);
+  } else {
+    data = getDataPending();
+  }
   console.log(data, "data");
   res.json(data);
 });
@@ -31,43 +32,42 @@ router.get("/", async function (req, res, next) {
 router.post("/", async function (req, res, next) {
   const decimos = req.body.data;
 
-  // if (inTime(req.query.type)) {
-  let total = 0;
-  let status;
-  let statusElPais;
-  for (let decimo of decimos) {
-    let response = null;
-    try {
-      response = await checkOne(decimo.number, req.query.type);
-      console.log(response, "response");
-    } catch (e) {
-      console.log("error333333333333", JSON.stringify(e));
+  if (inTime(req.query.type)) {
+    let total = 0;
+    let status;
+    let statusElPais;
+    for (let decimo of decimos) {
+      let response = null;
+      try {
+        response = await checkOne(decimo.number, req.query.type);
+      } catch (e) {
+        console.log("error333333333333", JSON.stringify(e));
+      }
+      statusElPais = response.status;
+      status = getStatus(statusElPais, response.premio, response.timestamp);
+      const premio = getQuantityByAmount(decimo.amount, response.premio);
+      if (status === "pending") {
+        break;
+      } else if (status === "win") {
+        total += premio;
+      }
+      decimo.status = status;
+      decimo.statusElPais = statusElPais;
+      decimo.quantity = premio;
     }
-    statusElPais = response.status;
-    status = getStatus(statusElPais, response.premio, response.timestamp);
-    const premio = getQuantityByAmount(decimo.amount, response.premio);
-    if (status === "pending") {
-      break;
-    } else if (status === "win") {
-      total += premio;
+    if (status !== "pending") {
+      status = total > 0 ? "win" : "lost";
     }
-    decimo.status = status;
-    decimo.statusElPais = statusElPais;
-    decimo.quantity = premio;
+    const message = getMessage(status, total, statusElPais);
+    data = {
+      error: 0,
+      quantity: total,
+      message: message,
+      decimos: decimos,
+    };
+  } else {
+    data = getDataPending();
   }
-  if (status !== "pending") {
-    status = total > 0 ? "win" : "lost";
-  }
-  const message = getMessage(status, total, statusElPais);
-  data = {
-    error: 0,
-    quantity: total,
-    message: message,
-    decimos: decimos,
-  };
-  // } else {
-  //   data = getDataPending();
-  // }
 
   res.json(data);
 });
@@ -81,7 +81,6 @@ const inTime = (type) => {
 
 const checkOne = (number, type) => {
   console.log(YEARNAVIDAD, "YEARNAVIDAD4");
-  console.log(type, "type");
   var options = {
     method: "get",
     json: true,
@@ -129,7 +128,6 @@ const getQuantityByAmount = (amount, premio) => {
 };
 
 const getStatus = (resStatus, premio, timestamp) => {
-  console.log(resStatus, premio, timestamp, "resStatus, premio, timestamp");
   let isYear =
     new Date(timestamp * 1000).getFullYear() === YEARNAVIDAD ||
     new Date(timestamp * 1000).getFullYear() === YEARNINO;
@@ -137,7 +135,6 @@ const getStatus = (resStatus, premio, timestamp) => {
   let status;
 
   console.log(resStatus, "resStatusresStatusresStatus");
-  console.log(isYear, "isYearisYearisYear");
   console.log(isYear, "isYearisYearisYear");
 
   if (!isYear) {
