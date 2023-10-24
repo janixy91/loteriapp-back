@@ -81,6 +81,7 @@ const inTime = (type) => {
 
 const checkOne = (number, type) => {
   console.log(YEARNAVIDAD, "YEARNAVIDAD4");
+  console.log(type, "type");
   var options = {
     method: "get",
     json: true,
@@ -128,6 +129,7 @@ const getQuantityByAmount = (amount, premio) => {
 };
 
 const getStatus = (resStatus, premio, timestamp) => {
+  console.log(resStatus, premio, timestamp, "resStatus, premio, timestamp");
   let isYear =
     new Date(timestamp * 1000).getFullYear() === YEARNAVIDAD ||
     new Date(timestamp * 1000).getFullYear() === YEARNINO;
@@ -135,6 +137,7 @@ const getStatus = (resStatus, premio, timestamp) => {
   let status;
 
   console.log(resStatus, "resStatusresStatusresStatus");
+  console.log(isYear, "isYearisYearisYear");
   console.log(isYear, "isYearisYearisYear");
 
   if (!isYear) {
