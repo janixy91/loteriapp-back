@@ -1,7 +1,7 @@
 var express = require("express");
 var router = express.Router();
 var request = require("request-promise-native");
-var YEARNAVIDAD = 2022;
+var YEARNAVIDAD = 2023;
 var YEARNINO = YEARNAVIDAD + 1;
 
 router.get("/", async function (req, res, next) {
@@ -13,8 +13,8 @@ router.get("/", async function (req, res, next) {
     } catch (e) {
       console.log("este es el error", JSON.stringify(e));
     }
-    
-    console.log(response, "responses")
+
+    console.log(response, "responses");
     const status = getStatus(
       response.status,
       response.premio,
@@ -24,7 +24,7 @@ router.get("/", async function (req, res, next) {
   } else {
     data = getDataPending();
   }
-  console.log(data, "data")
+  console.log(data, "data");
   res.json(data);
 });
 
