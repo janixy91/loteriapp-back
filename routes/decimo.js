@@ -7,24 +7,23 @@ var YEARNINO = YEARNAVIDAD + 1;
 
 router.get("/", async function (req, res, next) {
   let data;
-  if (inTime(req.query.type)) {
-    let response = null;
-    try {
-      response = await checkOne(req.query.code, req.query.type);
-    } catch (e) {
-      console.log("este es el error", JSON.stringify(e));
-    }
-
-    console.log(response, "responses");
-    const status = getStatus(
-      response.status,
-      response.premio,
-      response.timestamp
-    );
-    data = getData(response, status, req.query.amount);
-  } else {
-    data = getDataPending();
+  // if (inTime(req.query.type)) {
+  let response = null;
+  try {
+    response = await checkOne(req.query.code, req.query.type);
+  } catch (e) {
+    console.log("este es el error", JSON.stringify(e));
   }
+
+  const status = getStatus(
+    response.status,
+    response.premio,
+    response.timestamp
+  );
+  data = getData(response, status, req.query.amount);
+  // } else {
+  //   data = getDataPending();
+  // }
   console.log(data, "data");
   res.json(data);
 });
