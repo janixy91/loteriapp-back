@@ -1,13 +1,21 @@
 var express = require("express");
 var router = express.Router();
 var request = require("request-promise-native");
-var YEARNAVIDAD = 2022;
+var YEARNAVIDAD = 2023;
+
 var YEARNINO = YEARNAVIDAD + 1;
 
 router.get("/", async function (req, res, next) {
   let data;
   if (inTime(req.query.type)) {
-    const response = await checkOne(req.query.code, req.query.type);
+    let response = null;
+    try {
+      response = await checkOne(req.query.code, req.query.type);
+    } catch (e) {
+      console.log("este es el error", JSON.stringify(e));
+    }
+
+    console.log(response, "responses");
     const status = getStatus(
       response.status,
       response.premio,
@@ -17,6 +25,7 @@ router.get("/", async function (req, res, next) {
   } else {
     data = getDataPending();
   }
+  console.log(data, "data");
   res.json(data);
 });
 
@@ -28,7 +37,12 @@ router.post("/", async function (req, res, next) {
     let status;
     let statusElPais;
     for (let decimo of decimos) {
-      const response = await checkOne(decimo.number, req.query.type);
+      let response = null;
+      try {
+        response = await checkOne(decimo.number, req.query.type);
+      } catch (e) {
+        console.log("error333333333333", JSON.stringify(e));
+      }
       statusElPais = response.status;
       status = getStatus(statusElPais, response.premio, response.timestamp);
       const premio = getQuantityByAmount(decimo.amount, response.premio);
@@ -66,19 +80,21 @@ const inTime = (type) => {
 };
 
 const checkOne = (number, type) => {
+  console.log(YEARNAVIDAD, "YEARNAVIDAD4");
   var options = {
     method: "get",
     json: true,
     url:
       type === "nino"
-        ? `http://api.elpais.com/ws/LoteriaNinoPremiados?n=${parseInt(number)}`
-        : `http://api.elpais.com/ws/LoteriaNavidadPremiados?n=${parseInt(
+        ? `https://api.elpais.com/ws/LoteriaNinoPremiados?n=${parseInt(number)}`
+        : `https://api.elpais.com/ws/LoteriaNavidadPremiados?n=${parseInt(
             number
           )}`,
   };
-
+  console.log(options, "options");
   return new Promise((resolve) => {
     request(options).then((responseText) => {
+      console.log(JSON.parse(responseText.replace("busqueda=", "")), "result");
       resolve(JSON.parse(responseText.replace("busqueda=", "")));
     });
   });
@@ -118,7 +134,10 @@ const getStatus = (resStatus, premio, timestamp) => {
   // isYear = true;
   let status;
 
-  if (!isYear || resStatus === 0) {
+  console.log(resStatus, "resStatusresStatusresStatus");
+  console.log(isYear, "isYearisYearisYear");
+
+  if (!isYear) {
     status = "pending";
   } else if (premio > 0) {
     status = "win";
