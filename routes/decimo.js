@@ -39,6 +39,7 @@ router.post("/", async function (req, res, next) {
     let response = null;
     try {
       response = await checkOne(decimo.number, req.query.type);
+      console.log(response, "response");
     } catch (e) {
       console.log("error333333333333", JSON.stringify(e));
     }
