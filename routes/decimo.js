@@ -154,8 +154,8 @@ const getMessage = (status, premio, responseStatus) => {
 
   if (status === "pending") {
     message = {
-      text: "El sorteo no ha empezado",
-      title: "¡Una cosa!",
+      text: "El proveedor de datos no está funcionando",
+      title: "Hay un error con el proveedor",
     };
   } else if (status === "win") {
     if (responseStatus !== 4) {
