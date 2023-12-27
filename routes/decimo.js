@@ -18,7 +18,7 @@ router.get("/", async function (req, res, next) {
     console.log(response, "responses");
     const status = getStatus(
       response.status,
-      response.premio,
+      response.total,
       response.timestamp
     );
     data = getData(response, status, req.query.amount);
@@ -44,8 +44,8 @@ router.post("/", async function (req, res, next) {
         console.log("error333333333333", JSON.stringify(e));
       }
       statusElPais = response.status;
-      status = getStatus(statusElPais, response.premio, response.timestamp);
-      const premio = getQuantityByAmount(decimo.amount, response.premio);
+      status = getStatus(statusElPais, response.total, response.timestamp);
+      const premio = getQuantityByAmount(decimo.amount, response.total);
       if (status === "pending") {
         break;
       } else if (status === "win") {
@@ -82,26 +82,35 @@ const inTime = (type) => {
 const checkOne = (number, type) => {
   console.log(YEARNAVIDAD, "YEARNAVIDAD4");
   var options = {
-    method: "get",
+    method: "post",
     json: true,
-    url:
-      type === "nino"
-        ? `https://api.elpais.com/ws/LoteriaNinoPremiados?n=${parseInt(number)}`
-        : `https://api.elpais.com/ws/LoteriaNavidadPremiados?n=${parseInt(
-            number
-          )}`,
+    form: {
+      fecha:
+        new Date().getFullYear() === YEARNAVIDAD
+          ? `${YEARNAVIDAD}-12-22`
+          : `${YEARNINO}-01-06`,
+      fraccion: "",
+      id_draw: "2023102",
+      numero: parseInt(number),
+      serie: "",
+    },
+    url: "https://www.buscarloteria.com/ajax/comprobarLN",
   };
   console.log(options, "options");
   return new Promise((resolve) => {
-    request(options).then((responseText) => {
-      console.log(JSON.parse(responseText.replace("busqueda=", "")), "result");
-      resolve(JSON.parse(responseText.replace("busqueda=", "")));
-    });
+    request(options)
+      .then((responseText) => {
+        console.log(responseText, "result");
+        resolve(responseText);
+      })
+      .catch((e) => {
+        console.log("hola", e);
+      });
   });
 };
 
 const getData = (response, status, amount) => {
-  const premio = getQuantityByAmount(amount, response.premio);
+  const premio = getQuantityByAmount(amount, response.total);
   return {
     error: 0,
     quantity: premio,
@@ -129,13 +138,12 @@ const getQuantityByAmount = (amount, premio) => {
 
 const getStatus = (resStatus, premio, timestamp) => {
   let isYear =
-    new Date(timestamp * 1000).getFullYear() === YEARNAVIDAD ||
-    new Date(timestamp * 1000).getFullYear() === YEARNINO;
+    new Date().getFullYear() === YEARNAVIDAD ||
+    new Date().getFullYear() === YEARNINO;
   // isYear = true;
   let status;
 
-  console.log(resStatus, "resStatusresStatusresStatus");
-  console.log(isYear, "isYearisYearisYear");
+  console.log(premio, "resStatusresStatusresStatus");
 
   if (!isYear) {
     status = "pending";
@@ -155,8 +163,8 @@ const getMessage = (status, premio, responseStatus) => {
 
   if (status === "pending") {
     message = {
-      text: "El sorteo no ha empezado",
-      title: "¡Una cosa!",
+      text: "El proveedor de datos no está funcionando",
+      title: "Hay un error con el proveedor",
     };
   } else if (status === "win") {
     if (responseStatus !== 4) {
