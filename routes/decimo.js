@@ -5,6 +5,7 @@ var request = require("request-promise-native");
 var YEARNAVIDAD = 2023;
 var YEARNINO = YEARNAVIDAD + 1;
 
+//  no se esta usando
 router.get("/", async function (req, res, next) {
   let data;
   if (inTime(req.query.type)) {
@@ -31,7 +32,7 @@ router.get("/", async function (req, res, next) {
 
 router.post("/", async function (req, res, next) {
   const decimos = req.body.data;
-
+  console.log(req.query.type, "req.query.type");
   if (inTime(req.query.type)) {
     let total = 0;
     let status;
@@ -40,31 +41,35 @@ router.post("/", async function (req, res, next) {
       let response = null;
       try {
         response = await checkOne(decimo.number, req.query.type);
+        if (response) {
+          statusElPais = response.status;
+          status = getStatus(statusElPais, response.total, response.timestamp);
+          const premio = getQuantityByAmount(decimo.amount, response.total);
+          if (status === "pending") {
+            break;
+          } else if (status === "win") {
+            total += premio;
+          }
+          decimo.status = status;
+          decimo.statusElPais = statusElPais;
+          decimo.quantity = premio;
+          if (status !== "pending") {
+            status = total > 0 ? "win" : "lost";
+          }
+          const message = getMessage(status, total, statusElPais);
+          data = {
+            error: 0,
+            quantity: total,
+            message: message,
+            decimos: decimos,
+          };
+        } else {
+          data = getDataPending();
+        }
       } catch (e) {
         console.log("error333333333333", JSON.stringify(e));
       }
-      statusElPais = response.status;
-      status = getStatus(statusElPais, response.total, response.timestamp);
-      const premio = getQuantityByAmount(decimo.amount, response.total);
-      if (status === "pending") {
-        break;
-      } else if (status === "win") {
-        total += premio;
-      }
-      decimo.status = status;
-      decimo.statusElPais = statusElPais;
-      decimo.quantity = premio;
     }
-    if (status !== "pending") {
-      status = total > 0 ? "win" : "lost";
-    }
-    const message = getMessage(status, total, statusElPais);
-    data = {
-      error: 0,
-      quantity: total,
-      message: message,
-      decimos: decimos,
-    };
   } else {
     data = getDataPending();
   }
@@ -80,15 +85,12 @@ const inTime = (type) => {
 };
 
 const checkOne = (number, type) => {
-  console.log(YEARNAVIDAD, "YEARNAVIDAD4");
+  console.log(YEARNAVIDAD, "YEARNAVIDAD4", type);
   var options = {
     method: "post",
     json: true,
     form: {
-      fecha:
-        new Date().getFullYear() === YEARNAVIDAD
-          ? `${YEARNAVIDAD}-12-22`
-          : `${YEARNINO}-01-06`,
+      fecha: type === "navidad" ? `${YEARNAVIDAD}-12-22` : `${YEARNINO}-01-06`,
       fraccion: "",
       id_draw: "2023102",
       numero: parseInt(number),
@@ -174,7 +176,7 @@ const getMessage = (status, premio, responseStatus) => {
       };
     } else {
       message = {
-        text: `¡ Segun los datos proporcionados por ELPAIS has GANADO ${premio}€!`,
+        text: `¡ Segun los datos proporcionados por el proveedor has GANADO ${premio}€!`,
         title: "¡Premio!",
       };
     }
@@ -186,7 +188,7 @@ const getMessage = (status, premio, responseStatus) => {
       };
     } else {
       message = {
-        text: `Segun los datos proporcionados por ELPAIS no has sido premiado.`,
+        text: `Segun los datos proporcionados por el proveedor no has sido premiado.`,
         title: "Lo sentimos",
       };
     }
