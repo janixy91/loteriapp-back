@@ -126,7 +126,7 @@ const getDataPending = () => {
     quantity: 0,
     status: "pending",
     message: {
-      text: "El sorteo no ha empezado",
+      text: "Aun no hay datos",
       title: "¡Una cosa!",
     },
     decimos: [],
