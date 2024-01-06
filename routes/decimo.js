@@ -91,7 +91,7 @@ const checkOne = (number, type) => {
     form: {
       fecha: type === "navidad" ? `${YEARNAVIDAD}-12-22` : `${YEARNINO}-01-06`,
       fraccion: "",
-      id_draw: "2023102",
+      id_draw: "2024102",
       numero: parseInt(number),
       serie: "",
     },

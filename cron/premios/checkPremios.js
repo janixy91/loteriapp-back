@@ -440,7 +440,7 @@ const getPremios = (type) => {
     json: true,
     form: {
       date: type === "navidad" ? `${YEARNAVIDAD}-12-22` : `${YEARNINO}-01-06`,
-      id_draw: "2023102",
+      id_draw: "2024102",
       "id-game": type === "navidad" ? 7 : 7,
     },
     url: "https://www.buscarloteria.com/ajax/getGameResult",
