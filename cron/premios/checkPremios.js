@@ -480,7 +480,7 @@ const checkCreateAndPush = (index, number, type) => {
             !index.includes("extracciones4cifra")
           ) {
             console.log("a push", index);
-            // await _sendPush(index, number, type);
+            await _sendPush(index, number, type);
           }
         }
         resolve();
