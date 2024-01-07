@@ -7,67 +7,71 @@ var YEARNINO = YEARNAVIDAD + 1;
 //  no se esta usando
 router.get("/", async function (req, res, next) {
   let data;
-  // if (inTime(req.query.type)) {
-  let response = null;
-  try {
-    response = await checkOne(req.query.code, req.query.type);
-  } catch (e) {
-    console.log("este es el error", JSON.stringify(e));
-  }
+  if (inTime(req.query.type)) {
+    let response = null;
+    try {
+      response = await checkOne(req.query.code, req.query.type);
+    } catch (e) {
+      console.log("este es el error", JSON.stringify(e));
+    }
 
-  console.log(response, "responses");
-  const status = getStatus(response.status, response.total, response.timestamp);
-  data = getData(response, status, req.query.amount);
-  // } else {
-  //   data = getDataPending();
-  // }
-  console.log(data, "data");
+    console.log(response, "responses");
+    const status = getStatus(
+      response.status,
+      response.total,
+      response.timestamp
+    );
+    data = getData(response, status, req.query.amount);
+  } else {
+    data = getDataPending();
+  }
   res.json(data);
 });
 
 router.post("/", async function (req, res, next) {
   const decimos = req.body.data;
   console.log(req.query.type, "req.query.type");
-  // if (inTime(req.query.type)) {
-  let total = 0;
-  let status;
-  let statusElPais;
-  for (let decimo of decimos) {
-    let response = null;
-    try {
-      response = await checkOne(decimo.number, req.query.type);
-      if (response) {
-        statusElPais = response.status;
-        status = getStatus(statusElPais, response.total, response.timestamp);
-        const premio = getQuantityByAmount(decimo.amount, response.total);
-        if (status === "pending") {
-          break;
-        } else if (status === "win") {
-          total += premio;
+  if (inTime(req.query.type)) {
+    let total = 0;
+    let status;
+    let statusElPais;
+    for (let decimo of decimos) {
+      let response = null;
+      try {
+        response = await checkOne(decimo.number, req.query.type);
+        if (response) {
+          statusElPais = response.status;
+          status = getStatus(statusElPais, response.total, response.timestamp);
+          const premio = getQuantityByAmount(decimo.amount, response.total);
+          if (status === "pending") {
+            break;
+          } else if (status === "win") {
+            total += premio;
+          }
+          decimo.status = status;
+          decimo.statusElPais = statusElPais;
+          decimo.quantity = premio;
+          if (status !== "pending") {
+            status = total > 0 ? "win" : "lost";
+          }
+          const message = getMessage(status, total, statusElPais);
+          data = {
+            error: 0,
+            quantity: total,
+            message: message,
+            decimos: decimos,
+          };
+        } else {
+          console.log("hola");
+          data = getDataPending();
         }
-        decimo.status = status;
-        decimo.statusElPais = statusElPais;
-        decimo.quantity = premio;
-        if (status !== "pending") {
-          status = total > 0 ? "win" : "lost";
-        }
-        const message = getMessage(status, total, statusElPais);
-        data = {
-          error: 0,
-          quantity: total,
-          message: message,
-          decimos: decimos,
-        };
-      } else {
-        data = getDataPending();
+      } catch (e) {
+        console.log("error333333333333", JSON.stringify(e));
       }
-    } catch (e) {
-      console.log("error333333333333", JSON.stringify(e));
     }
+  } else {
+    data = getDataPending();
   }
-  // } else {
-  //   data = getDataPending();
-  // }
 
   res.json(data);
 });
@@ -87,7 +91,7 @@ const checkOne = (number, type) => {
     form: {
       fecha: type === "navidad" ? `${YEARNAVIDAD}-12-22` : `${YEARNINO}-01-06`,
       fraccion: "",
-      id_draw: "2024102",
+      id_draw: type === "navidad" ? `2023102` : "2024002",
       numero: parseInt(number),
       serie: "",
     },
@@ -122,7 +126,7 @@ const getDataPending = () => {
     quantity: 0,
     status: "pending",
     message: {
-      text: "Aun no hay datos",
+      text: "El sorteo no ha empezado",
       title: "¡Una cosa!",
     },
     decimos: [],
