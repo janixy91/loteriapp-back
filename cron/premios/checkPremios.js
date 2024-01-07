@@ -80,29 +80,40 @@ const _checkNavidad = async (response, type) => {
 };
 
 const _checkNino = async (response, type) => {
+  // el 1, 2 y 3
   const listaPremios = response.bet;
   let number;
   for (let numberIndex in listaPremios) {
     let numeroDePremio = numberIndex.replace("P", "");
-    if (numeroDePremio === "4" || numeroDePremio === "5") {
-      // const startOn = numeroDePremio === "4" ? 4 : 6;
-      // let count = 0;
-      // for (let premio of listaPremios[numberIndex]) {
-      //   if (premio) {
-      //     number = pad(premio, 5);
-      //     await checkCreateAndPush(
-      //       "numero" + (parseInt(startOn) + count),
-      //       number,
-      //       type
-      //     );
-      //     count++;
-      //   }
-      // }
-    } else {
-      if (listaPremios[numberIndex]) {
-        number = pad(listaPremios[numberIndex], 5);
-        await checkCreateAndPush("premio" + numeroDePremio, number, type);
+    if (listaPremios[numberIndex]) {
+      number = pad(listaPremios[numberIndex], 5);
+      await checkCreateAndPush("premio" + numeroDePremio, number, type);
+    }
+  }
+
+  const extracciones = response.other.extractions;
+  for (let numberIndex in extracciones) {
+    let numeroDePremio = numberIndex.replace("T", "");
+    let count = 0;
+    for (let premio of extracciones[numberIndex]) {
+      if (premio) {
+        await checkCreateAndPush(
+          "extracciones" + numeroDePremio + "cifras" + (count + 1),
+          premio,
+          type
+        );
+        count++;
       }
+    }
+  }
+
+  const reintegros = response.other.num_refund;
+  let count = 0;
+
+  for (let premio of reintegros) {
+    if (premio) {
+      await checkCreateAndPush("reintegros" + (count + 1), premio, type);
+      count++;
     }
   }
 };
@@ -440,7 +451,7 @@ const getPremios = (type) => {
     json: true,
     form: {
       date: type === "navidad" ? `${YEARNAVIDAD}-12-22` : `${YEARNINO}-01-06`,
-      id_draw: "2023102",
+      id_draw: type === "navidad" ? `2023102` : "2024002",
       "id-game": type === "navidad" ? 7 : 7,
     },
     url: "https://www.buscarloteria.com/ajax/getGameResult",
@@ -468,7 +479,7 @@ const checkCreateAndPush = (index, number, type) => {
             !index.includes("extracciones3cifra") &&
             !index.includes("extracciones4cifra")
           ) {
-            console.log("a push");
+            console.log("a push", index);
             await _sendPush(index, number, type);
           }
         }

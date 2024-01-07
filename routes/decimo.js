@@ -26,7 +26,6 @@ router.get("/", async function (req, res, next) {
   } else {
     data = getDataPending();
   }
-  console.log(data, "data");
   res.json(data);
 });
 
@@ -64,6 +63,7 @@ router.post("/", async function (req, res, next) {
             decimos: decimos,
           };
         } else {
+          console.log("hola");
           data = getDataPending();
         }
       } catch (e) {
@@ -92,7 +92,7 @@ const checkOne = (number, type) => {
     form: {
       fecha: type === "navidad" ? `${YEARNAVIDAD}-12-22` : `${YEARNINO}-01-06`,
       fraccion: "",
-      id_draw: "2023102",
+      id_draw: type === "navidad" ? `2023102` : "2024002",
       numero: parseInt(number),
       serie: "",
     },
