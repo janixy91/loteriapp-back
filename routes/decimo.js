@@ -2,7 +2,7 @@ var express = require("express");
 var router = express.Router();
 var request = require("request-promise-native");
 
-var YEARNAVIDAD = 2023;
+var YEARNAVIDAD = 2024;
 var YEARNINO = YEARNAVIDAD + 1;
 
 //  no se esta usando
@@ -17,11 +17,7 @@ router.get("/", async function (req, res, next) {
     }
 
     console.log(response, "responses");
-    const status = getStatus(
-      response.status,
-      response.total,
-      response.timestamp
-    );
+    const status = getStatus(response.status, response.total);
     data = getData(response, status, req.query.amount);
   } else {
     data = getDataPending();
@@ -31,7 +27,8 @@ router.get("/", async function (req, res, next) {
 
 router.post("/", async function (req, res, next) {
   const decimos = req.body.data;
-  console.log(req.query.type, "req.query.type");
+  let data;
+
   if (inTime(req.query.type)) {
     let total = 0;
     let status;
@@ -63,7 +60,6 @@ router.post("/", async function (req, res, next) {
             decimos: decimos,
           };
         } else {
-          console.log("hola");
           data = getDataPending();
         }
       } catch (e) {
@@ -84,32 +80,41 @@ const inTime = (type) => {
   );
 };
 
-const checkOne = (number, type) => {
-  console.log(YEARNAVIDAD, "YEARNAVIDAD4", type);
-  var options = {
-    method: "post",
-    json: true,
-    form: {
-      fecha: type === "navidad" ? `${YEARNAVIDAD}-12-22` : `${YEARNINO}-01-06`,
-      fraccion: "",
-      id_draw: type === "navidad" ? `2023102` : "2024002",
-      numero: parseInt(number),
-      serie: "",
-    },
-    url: "https://www.buscarloteria.com/ajax/comprobarLN",
-  };
-  console.log(options, "options");
-  return new Promise((resolve) => {
-    request(options)
-      .then((responseText) => {
-        console.log(responseText, "result");
-        resolve(responseText);
-      })
-      .catch((e) => {
-        console.log("hola", e);
-      });
-  });
+const checkOne = async (number, type) => {
+  try {
+    const response = await fetch(
+      type === "navidad"
+        ? "https://api-loteria.pabloclementeperez.com/output/LoteriaNavidad.json"
+        : "https://api-loteria.pabloclementeperez.com/output/LoteriaElNino.json"
+    );
+
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+
+    const data = await response.json();
+    const premioEncontrado = buscarPremioPorNumero(data, number);
+    return {
+      total: premioEncontrado,
+      status: data.status,
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.error("Hubo un problema con la solicitud Fetch:", error);
+    throw error; // Lanza el error para que pueda ser manejado por quien llame a la función
+  }
 };
+
+// Función para buscar el premio por número
+function buscarPremioPorNumero(premios, numero, cantidadJugado = 20) {
+  const premio = premios[parseInt(numero)]; // Busca el premio por número
+  if (premio) {
+    const premioNumerico = parseInt(premio, 10); // Convierte el premio a número
+    const premioProporcional = premioNumerico / 10; // Calcula el premio proporcional
+    return premioProporcional; // Devuelve el premio proporcional
+  }
+  return 0; // Devuelve 0 si no se encuentra el premio
+}
 
 const getData = (response, status, amount) => {
   const premio = getQuantityByAmount(amount, response.total);
@@ -138,7 +143,7 @@ const getQuantityByAmount = (amount, premio) => {
   return (premio / 20) * amount;
 };
 
-const getStatus = (resStatus, premio, timestamp) => {
+const getStatus = (resStatus, premio) => {
   let isYear =
     new Date().getFullYear() === YEARNAVIDAD ||
     new Date().getFullYear() === YEARNINO;
