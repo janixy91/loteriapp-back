@@ -53,8 +53,10 @@ const _checkNavidad = async (response, type) => {
     count++;
     if (numberIndex === "numero" + count) {
       if (response[numberIndex] !== "-1" && response[numberIndex] !== -1) {
-        const number = pad(response[numberIndex], 5);
-        await checkCreateAndPush(numberIndex, number, type);
+        if (response[numberIndex] !== 0) {
+          const number = pad(response[numberIndex], 5);
+          await checkCreateAndPush(numberIndex, number, type);
+        }
       }
     }
 
