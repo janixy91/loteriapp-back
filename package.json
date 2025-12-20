@@ -9,18 +9,18 @@
     "node": "8.13.0"
   },
   "dependencies": {
-    "body-parser": "~1.17.1",
-    "cookie-parser": "~1.4.3",
-    "cors": "^2.8.5",
-    "debug": "~2.6.3",
-    "express": "~4.15.2",
-    "firebase": "^7.6.0",
-    "jade": "~1.11.0",
-    "morgan": "~1.8.1",
-    "node-cron": "^2.0.3",
-    "onesignal-node": "^2.1.1",
-    "request": "^2.88.0",
-    "request-promise-native": "^1.0.8",
-    "serve-favicon": "~2.4.2"
+    "body-parser": "1.17.1",
+    "cookie-parser": "1.4.3",
+    "cors": "2.8.5",
+    "debug": "2.6.3",
+    "express": "4.15.2",
+    "firebase": "^8.10.1",
+    "jade": "1.11.0",
+    "morgan": "1.8.1",
+    "node-cron": "2.0.3",
+    "onesignal-node": "2.1.1",
+    "request": "2.88.0",
+    "request-promise-native": "1.0.8",
+    "serve-favicon": "2.4.2"
   }
 }
