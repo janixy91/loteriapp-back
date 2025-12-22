@@ -3,6 +3,7 @@ var router = express.Router();
 var request = require("request-promise-native");
 var OneSignal = require("onesignal-node");
 var firebase = require("firebase");
+var fetch = require("node-fetch");
 
 var myClient = new OneSignal.Client({
   userAuthKey: "ZGY4YTk1M2QtN2E0ZC00ZGM1LThmNmUtN2Q2NGQ4N2E2MTY1",
