@@ -8,8 +8,8 @@
     "verify:rtve": "node ./scripts/verify-rtve-source.js"
   },
   "engines": {
-    "node": "18.x",
-    "npm": "9.x"
+    "node": "22.x",
+    "npm": "10.x"
   },
   "dependencies": {
     "body-parser": "1.17.1",
