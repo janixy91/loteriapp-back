@@ -6,12 +6,26 @@ var firebase = require("../services/firebase");
 var lotteryConfig = require("../services/lottery/config");
 var firebaseResults = require("../services/lottery/firebaseResults");
 var lotteryProvider = require("../services/lottery/rtveProvider");
+var simulator = require("../services/lottery/simulator");
+
+function providerOptions(type, req) {
+  if (!simulator.isActive(type)) {
+    return {};
+  }
+  return {
+    config: {
+      ...lotteryConfig.getDrawConfig(type),
+      sourceName: "simulator",
+      sourceRoot: simulator.sourceRoot(type, simulator.requestOrigin(req)),
+    },
+  };
+}
 
 router.get("/status", async function (req, res) {
   const type = req.query.type;
   try {
     const config = lotteryConfig.getDrawConfig(type);
-    if (!lotteryConfig.isDrawStarted(type)) {
+    if (!lotteryConfig.isDrawStarted(type) && !simulator.isActive(type)) {
       res.json({
         type: type,
         year: config.year,
@@ -22,7 +36,10 @@ router.get("/status", async function (req, res) {
       return;
     }
 
-    const snapshot = await lotteryProvider.getSnapshot(type);
+    const snapshot = await lotteryProvider.getSnapshot(
+      type,
+      providerOptions(type, req)
+    );
     res.json({
       type: snapshot.type,
       year: snapshot.year,
@@ -41,7 +58,7 @@ router.get("/", async function (req, res) {
   const type = req.query.type;
   try {
     const config = lotteryConfig.getDrawConfig(type);
-    if (!lotteryConfig.isDrawStarted(type)) {
+    if (!lotteryConfig.isDrawStarted(type) && !simulator.isActive(type)) {
       res.json({});
       return;
     }

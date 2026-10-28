@@ -181,7 +181,11 @@ function parseNumbersPage(html, source = "RTVE") {
 }
 
 async function fetchText(url) {
-  if (!url.startsWith("https://")) {
+  const parsedUrl = new URL(url);
+  const localHost = ["localhost", "127.0.0.1", "::1"].includes(
+    parsedUrl.hostname
+  );
+  if (parsedUrl.protocol !== "https:" && !localHost) {
     throw new LotterySourceError(`Se rechaza una fuente sin HTTPS: ${url}`);
   }
 
@@ -202,7 +206,11 @@ async function fetchText(url) {
         `${url}: RTVE respondió con HTTP ${response.status}`
       );
     }
-    if (!response.url.startsWith("https://")) {
+    const responseUrl = new URL(response.url);
+    const responseIsLocal = ["localhost", "127.0.0.1", "::1"].includes(
+      responseUrl.hostname
+    );
+    if (responseUrl.protocol !== "https:" && !responseIsLocal) {
       throw new LotterySourceError(`${url}: redirección fuera de HTTPS`);
     }
     return await response.text();
@@ -345,7 +353,7 @@ async function fetchSnapshotForConfig(config) {
         status: 0,
         timestamp: Math.floor(Date.now() / 1000),
         fetchedAt: new Date().toISOString(),
-        source: "rtve",
+        source: config.sourceName || "rtve",
         summary,
         prizes: {},
       },
@@ -370,7 +378,7 @@ async function fetchSnapshotForConfig(config) {
       status,
       timestamp: Math.floor(Date.now() / 1000),
       fetchedAt: new Date().toISOString(),
-      source: "rtve",
+      source: config.sourceName || "rtve",
       summary,
       prizes,
     },
@@ -406,7 +414,7 @@ function ensureMonotonic(previous, candidate, config) {
 async function getSnapshot(type, options = {}) {
   const now = options.now || new Date();
   const config = options.config || getDrawConfig(type, now);
-  const cacheKey = `${config.type}:${config.year}`;
+  const cacheKey = `${config.type}:${config.year}:${config.sourceRoot}`;
   const entry = cache.get(cacheKey) || {};
   const fresh =
     entry.snapshot && Date.now() - entry.fetchedAt < cacheDuration();

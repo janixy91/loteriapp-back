@@ -46,3 +46,35 @@ la temporada vigente.
 Con el servidor arrancado, `GET /premios/status?type=navidad` devuelve el año,
 estado, fuente, número de resultados y si se está sirviendo una caché antigua
 por un fallo temporal de RTVE.
+
+## Simulador de desarrollo
+
+El backend incluye una fuente de pruebas que reproduce el HTML que consume el
+lector de RTVE. Permite probar los estados no iniciado, parcial, completo, una
+regresión de datos y una fuente rota. La pantalla ejecuta el parser real y puede
+guardar el resultado en `/navidad-dev` o `/nino-dev`, que son las ramas leídas
+por la app de desarrollo.
+
+Para activarlo:
+
+```sh
+environment=dev
+LOTTERY_SIMULATOR_ENABLED=true
+LOTTERY_SIMULATOR_TOKEN=un-token-largo-y-aleatorio
+# Obligatoria cuando no se ejecuta en localhost:
+LOTTERY_SIMULATOR_PUBLIC_URL=https://loteriapp-development.herokuapp.com
+```
+
+Después se abre `http://localhost:3000/simulador`. El token se conserva solo en
+la pestaña del navegador. El simulador:
+
+- devuelve `404` cuando no está habilitado;
+- queda bloqueado por código salvo que `environment` sea exactamente `dev`;
+- requiere el token para cambiar escenarios o escribir en Firebase;
+- reemplaza únicamente la rama `-dev` seleccionada;
+- no pasa por OneSignal y registra `notificationsSent: false` en Firebase.
+
+Mientras un escenario simulado está activo, `/premios`, `/premios/status` y
+`/decimo` pueden usarse antes de la fecha real para probar la app completa. El
+botón **Vaciar resultados dev** limpia la rama, la caché del lector y vuelve al
+estado no iniciado.

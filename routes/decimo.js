@@ -3,13 +3,15 @@ var router = express.Router();
 var getPrizePerDecimo = require("../services/lottery/rtveProvider")
   .getPrizePerDecimo;
 var isDrawStarted = require("../services/lottery/config").isDrawStarted;
+var getDrawConfig = require("../services/lottery/config").getDrawConfig;
+var simulator = require("../services/lottery/simulator");
 
 //  no se esta usando
 router.get("/", async function (req, res, next) {
   let data;
   if (inTime(req.query.type)) {
     try {
-      const response = await checkOne(req.query.code, req.query.type);
+      const response = await checkOne(req.query.code, req.query.type, req);
       const status = getStatus(response.status, response.total);
       data = getData(response, status, req.query.amount);
     } catch (e) {
@@ -31,7 +33,7 @@ router.post("/", async function (req, res, next) {
       let total = 0;
       let sourceStatus = 0;
       const responses = await Promise.all(
-        decimos.map((decimo) => checkOne(decimo.number, req.query.type))
+        decimos.map((decimo) => checkOne(decimo.number, req.query.type, req))
       );
 
       responses.forEach((response, index) => {
@@ -70,14 +72,23 @@ router.post("/", async function (req, res, next) {
 
 const inTime = (type) => {
   try {
-    return isDrawStarted(type);
+    return isDrawStarted(type) || simulator.isActive(type);
   } catch (error) {
     return false;
   }
 };
 
-const checkOne = async (number, type) => {
-  return getPrizePerDecimo(type, number);
+const checkOne = async (number, type, req) => {
+  if (!simulator.isActive(type)) {
+    return getPrizePerDecimo(type, number);
+  }
+  return getPrizePerDecimo(type, number, {
+    config: {
+      ...getDrawConfig(type),
+      sourceName: "simulator",
+      sourceRoot: simulator.sourceRoot(type, simulator.requestOrigin(req)),
+    },
+  });
 };
 
 const getData = (response, status, amount) => {

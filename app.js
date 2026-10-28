@@ -8,6 +8,7 @@ var bodyParser = require('body-parser');
 var index = require('./routes/index');
 var decimo = require('./routes/decimo');
 var premios = require('./routes/premios');
+var simulator = require('./routes/simulator');
 var cors = require('cors');
 var cron = require('./cron/premios/premios');
 
@@ -28,10 +29,14 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/favicon.ico', function (req, res) {
+  res.status(204).end();
+});
 
 app.use('/', index);
 app.use('/decimo', decimo);
 app.use('/premios', premios);
+app.use('/simulador', simulator);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   var err = new Error('Not Found');

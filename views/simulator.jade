@@ -1,0 +1,103 @@
+doctype html
+html(lang='es')
+  head
+    meta(charset='utf-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1')
+    title= title
+    link(rel='stylesheet', href='/stylesheets/simulator.css')
+  body
+    main.simulator
+      header.hero
+        div
+          p.eyebrow Loteriapp · entorno de desarrollo
+          h1 Simulador del sorteo
+          p.hero__copy Reproduce la estructura que lee el backend de RTVE y permite comprobar el recorrido completo hasta Firebase.
+        span.badge OneSignal bloqueado
+
+      form.panel.credentials(onsubmit='return false')
+        div
+          h2 Acceso
+          p El token solo se guarda en esta pestaña del navegador.
+        label.token-field
+          span Token del simulador
+          input#token(type='password', autocomplete='off', placeholder='Pega aquí LOTTERY_SIMULATOR_TOKEN')
+
+      section.workspace
+        aside.panel.controls
+          h2 Preparar prueba
+          label.field
+            span Sorteo
+            select#type
+              option(value='navidad') Navidad
+              option(value='nino') El Niño
+
+          fieldset.scenarios
+            legend Escenario
+            label.scenario
+              input(type='radio', name='scenario', value='pending', checked)
+              span
+                strong Aún no iniciado
+                small Sin números premiados
+            label.scenario
+              input(type='radio', name='scenario', value='partial')
+              span
+                strong En directo
+                small Solo los tres premios principales
+            label.scenario
+              input(type='radio', name='scenario', value='complete')
+              span
+                strong Finalizado
+                small Resumen y rangos completos
+            label.scenario
+              input(type='radio', name='scenario', value='changed')
+              span
+                strong Regresión
+                small Cambia un premio ya leído
+            label.scenario
+              input(type='radio', name='scenario', value='broken')
+              span
+                strong Fuente rota
+                small HTML incompatible
+
+          div.actions
+            button#apply.secondary(type='button') Solo publicar escenario
+            button#run.primary(type='button') Leer y guardar en Firebase
+
+          nav.links
+            a#source-link(target='_blank', rel='noreferrer') Ver fuente simulada
+            a#api-link(target='_blank', rel='noreferrer') Ver API de premios
+
+        section.results
+          article.panel.status-card
+            div.status-card__heading
+              div
+                p.eyebrow Estado actual
+                h2#current-title Cargando…
+              span#current-status.status-dot
+            dl.metrics
+              div
+                dt Año
+                dd#year —
+              div
+                dt Rama Firebase
+                dd#firebase-path —
+              div
+                dt Escenario
+                dd#current-scenario —
+
+          article.panel
+            div.output-heading
+              div
+                p.eyebrow Resultado
+                h2 Última operación
+              button#inspect.ghost(type='button') Leer Firebase
+            pre#output Selecciona un escenario y ejecuta la prueba.
+
+          article.panel.danger-zone
+            div
+              h2 Reiniciar prueba
+              p Vacía solamente la rama de desarrollo seleccionada y limpia la caché del lector.
+            button#reset.danger(type='button') Vaciar resultados dev
+
+    div#toast.toast(role='status', aria-live='polite')
+    script(src='/javascripts/simulator.js')

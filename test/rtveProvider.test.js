@@ -15,6 +15,8 @@ const {
   parseSummary,
   validateSnapshot,
 } = require("../services/lottery/rtveProvider");
+const simulator = require("../services/lottery/simulator");
+const { storedAwards } = require("../services/lottery/simulatorRunner");
 
 function withEnvironment(values, operation) {
   const previous = {};
@@ -207,5 +209,83 @@ test("compone el listado de El Niño desde los premios guardados", () => {
       },
       extracciones4cifras: { number: "-, -" },
     }
+  );
+});
+
+test("el simulador de Navidad genera el mismo contrato HTML que RTVE", () => {
+  const config = withEnvironment({ LOTTERY_NAVIDAD_YEAR: "2026" }, () =>
+    getDrawConfig("navidad")
+  );
+  const summary = parseSummary(
+    simulator.renderSummaryPage("navidad", "partial", config),
+    config
+  );
+  const prizes = parseNumbersPage(
+    simulator.renderNumbersPage("navidad", "partial", 75000, config)
+  );
+
+  assert.equal(summary.numero1, 79432);
+  assert.equal(summary.numero3, 42422);
+  assert.equal(summary.numero4, -1);
+  assert.equal(prizes[79432], 4000000);
+  assert.doesNotThrow(() =>
+    validateSnapshot({ status: 1, summary, prizes: {
+      ...parseNumbersPage(simulator.renderNumbersPage("navidad", "partial", 10000, config)),
+      ...parseNumbersPage(simulator.renderNumbersPage("navidad", "partial", 40000, config)),
+      ...prizes,
+    } }, config)
+  );
+});
+
+test("el escenario completo de El Niño cubre todas las terminaciones", () => {
+  const config = withEnvironment({ LOTTERY_NINO_YEAR: "2027" }, () =>
+    getDrawConfig("nino")
+  );
+  const summary = parseSummary(
+    simulator.renderSummaryPage("nino", "complete", config),
+    config
+  );
+  const prizes = {};
+  for (let start = 0; start < 100000; start += 5000) {
+    Object.assign(
+      prizes,
+      parseNumbersPage(
+        simulator.renderNumbersPage("nino", "complete", start, config)
+      )
+    );
+  }
+
+  assert.equal(summary.Primer_premio, 6703);
+  assert.ok(Object.keys(prizes).length >= 10000);
+  assert.doesNotThrow(() =>
+    validateSnapshot({ status: 2, summary, prizes }, config)
+  );
+});
+
+test("el simulador conserva las claves individuales que consume Firebase", () => {
+  const config = withEnvironment({ LOTTERY_NINO_YEAR: "2027" }, () =>
+    getDrawConfig("nino")
+  );
+  const summary = simulator.summaryFor("nino", "complete", config);
+  const stored = storedAwards("nino", summary);
+
+  assert.deepEqual(stored.premio1, { number: "06703" });
+  assert.deepEqual(stored.extracciones4cifras1, { number: "2920" });
+  assert.deepEqual(stored.extracciones3cifras13, { number: "054" });
+  assert.deepEqual(stored.reintegros1, { number: "2" });
+});
+
+test("el simulador no puede habilitarse en producción", () => {
+  withEnvironment(
+    { environment: "pro", LOTTERY_SIMULATOR_ENABLED: "true" },
+    () => assert.equal(simulator.isEnabled(), false)
+  );
+  withEnvironment(
+    { environment: "dev", LOTTERY_SIMULATOR_ENABLED: "true" },
+    () => assert.equal(simulator.isEnabled(), true)
+  );
+  withEnvironment(
+    { environment: "", LOTTERY_SIMULATOR_ENABLED: "true" },
+    () => assert.equal(simulator.isEnabled(), false)
   );
 });
