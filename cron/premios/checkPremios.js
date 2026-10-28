@@ -1,71 +1,55 @@
-var express = require("express");
-var router = express.Router();
-var request = require("request-promise-native");
 var OneSignal = require("onesignal-node");
-var firebase = require("firebase");
-var fetch = require("node-fetch");
+var firebase = require("../../services/firebase");
+var getLegacySummary = require("../../services/lottery/rtveProvider")
+  .getLegacySummary;
+var getDrawConfig = require("../../services/lottery/config").getDrawConfig;
+var firebaseResults = require("../../services/lottery/firebaseResults");
 
-var myClient = new OneSignal.Client({
-  userAuthKey: "ZGY4YTk1M2QtN2E0ZC00ZGM1LThmNmUtN2Q2NGQ4N2E2MTY1",
-  app: {
-    appAuthKey: "OWM2ODJhYmEtZjkzMy00ZTMzLWI3NmYtM2E4YTg1MzE1MDdi",
-    appId: "d8fc7736-f222-42f4-bd4e-460c1cbab6ba",
-  },
-});
+var myClient = null;
 
-firebase.initializeApp({
-  apiKey: "AIzaSyBKke5dMiIetgSyKXkz7dPIKMGTNUi2WFY",
-  authDomain: "loteriapp-9169e.firebaseapp.com",
-  databaseURL: "https://loteriapp-9169e.firebaseio.com",
-  projectId: "loteriapp-9169e",
-});
+const getOneSignalClient = () => {
+  if (process.env.PUSH_NOTIFICATIONS_ENABLED !== "true") {
+    return null;
+  }
+  if (myClient) {
+    return myClient;
+  }
 
-checkPremios = async function (type) {
+  const userAuthKey = process.env.ONESIGNAL_USER_AUTH_KEY;
+  const appAuthKey = process.env.ONESIGNAL_APP_AUTH_KEY;
+  const appId = process.env.ONESIGNAL_APP_ID;
+  if (!userAuthKey || !appAuthKey || !appId) {
+    throw new Error(
+      "OneSignal está activado, pero faltan sus variables de configuración"
+    );
+  }
+
+  myClient = new OneSignal.Client({
+    userAuthKey: userAuthKey,
+    app: { appAuthKey: appAuthKey, appId: appId },
+  });
+  return myClient;
+};
+
+const checkPremios = async function (type) {
   const response = await getPremios(type);
   if (response.status !== 0) {
+    await prepareDrawStorage(type);
     if (type === "navidad") {
-      _checkNavidad(response, type);
+      await _checkNavidad(response, type);
     } else {
-      _checkNino(response, type);
+      await _checkNino(response, type);
     }
   }
 };
 
 const _checkNavidad = async (response, type) => {
-  // antiguo cuando el pais
-
-  // delete response.status;
-  // delete response.timestamp;
-  // delete response.fraseSorteoPDF;
-  // delete response.fraseListaPDF;
-  // delete response.listaPDF;
-  // delete response.urlAudio;
-  // delete response.error;
-
-  delete response.status;
-  delete response.timestamp;
-  delete response.fraseSorteoPDF;
-  delete response.fraseListaPDF;
-  delete response.listaPDF;
-  delete response.urlAudio;
-  delete response.error;
-  let count = 0;
-  for (let numberIndex in response) {
-    count++;
-    if (numberIndex === "numero" + count) {
-      if (response[numberIndex] !== "-1" && response[numberIndex] !== -1) {
-        const number = pad(response[numberIndex], 5);
-        await checkCreateAndPush(numberIndex, number, type);
-      }
+  for (let count = 1; count <= 13; count++) {
+    const numberIndex = "numero" + count;
+    const value = response[numberIndex];
+    if (value !== "-1" && value !== -1 && value !== undefined) {
+      await checkCreateAndPush(numberIndex, pad(value, 5), type);
     }
-
-    // antiguo cuando el pais
-    // if (numberIndex === "numero" + count) {
-    //   if (response[numberIndex] !== "-1" && response[numberIndex] !== -1) {
-    //     const number = pad(response[numberIndex], 5);
-    //     await checkCreateAndPush(numberIndex, number, type);
-    //   }
-    // }
   }
 };
 
@@ -357,6 +341,20 @@ const _checkNino = async (response, type) => {
 
 const _sendPush = (numberIndex, number, type) => {
   return new Promise((resolve) => {
+    let client;
+    try {
+      client = getOneSignalClient();
+    } catch (error) {
+      console.error(error.message);
+      resolve();
+      return;
+    }
+    if (!client) {
+      console.log("OneSignal desactivado; no se envía", numberIndex);
+      resolve();
+      return;
+    }
+
     var firstNotification = new OneSignal.Notification({
       contents: {
         en: _getMessage(numberIndex, number),
@@ -376,12 +374,19 @@ const _sendPush = (numberIndex, number, type) => {
       ];
     } else {
       console.log("por dev");
-      firstNotification.postBody["include_player_ids"] = [
-        "8e9fac71-5adf-41a6-985a-4444903b415f",
-      ];
+      const testPlayerIds = (process.env.ONESIGNAL_TEST_PLAYER_IDS || "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (testPlayerIds.length === 0) {
+        console.log("OneSignal no tiene destinatarios de prueba configurados");
+        resolve();
+        return;
+      }
+      firstNotification.postBody["include_player_ids"] = testPlayerIds;
     }
 
-    myClient.sendNotification(
+    client.sendNotification(
       firstNotification,
       function (err, httpResponse, data) {
         if (err) {
@@ -394,10 +399,9 @@ const _sendPush = (numberIndex, number, type) => {
 };
 
 const _createNumberInDataBase = (numberIndex, number, type) => {
-  const environment = process.env.environment === "pro" ? "" : "-dev";
-  console.log(environment);
-  console.log(`/${type}${environment}/${numberIndex}`);
-  firebase.database().ref(`/${type}${environment}/${numberIndex}`).set({
+  const path = firebaseResults.resultPath(type, numberIndex);
+  console.log(path);
+  return firebase.database().ref(path).set({
     number: number,
   });
 };
@@ -448,64 +452,54 @@ const _getMessage = (numberIndex, number) => {
 };
 
 const getPremios = async (type) => {
-  // var options = {
-  //   method: "post",
-  //   json: true,
-  //   form: {
-  //     date: type === "navidad" ? `${YEARNAVIDAD}-12-22` : `${YEARNINO}-01-06`,
-  //     id_draw: type === "navidad" ? `2023102` : "2024002",
-  //     "id-game": type === "navidad" ? 7 : 7,
-  //   },
-  //   url: "https://www.buscarloteria.com/ajax/getGameResult",
-  // };
-
-  // return new Promise((resolve) => {
-  //   request(options).then((responseText) => {
-  //     resolve(responseText);
-  //   });
-  // });
-
-  try {
-    const response = await fetch(
-      type === "navidad"
-        ? "https://api-loteria.pabloclementeperez.com/output/LoteriaNavidadResumen.json"
-        : "https://api-loteria.pabloclementeperez.com/output/LoteriaElNinoResumen.json"
-    );
-
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Hubo un problema con la solicitud Fetch:", error);
-    throw error; // Lanza el error para que pueda ser manejado por quien llame a la función
-  }
+  return getLegacySummary(type);
 };
 
-const checkCreateAndPush = (index, number, type) => {
-  const environment = process.env.environment === "pro" ? "" : "-dev";
-  return new Promise((resolve) => {
-    firebase
-      .database()
-      .ref(`/${type}${environment}/${index}`)
-      .once("value")
-      .then(async function (snapshot) {
-        if (snapshot.val() === null) {
-          _createNumberInDataBase(index, number, type);
-          if (
-            !index.includes("extracciones2cifra") &&
-            !index.includes("extracciones3cifra") &&
-            !index.includes("extracciones4cifra")
-          ) {
-            console.log("a push", index);
-            await _sendPush(index, number, type);
-          }
-        }
-        resolve();
-      });
+const prepareDrawStorage = async (type) => {
+  const config = getDrawConfig(type);
+  const root = firebaseResults.resultsRootPath(type);
+  const reference = firebase.database().ref(root);
+  const snapshot = await reference.once("value");
+  const values = snapshot.val();
+
+  if (values && values._meta && values._meta.year === config.year) {
+    return;
+  }
+
+  await reference.set({
+    _meta: {
+      year: config.year,
+      source: "rtve",
+      initializedAt: new Date().toISOString(),
+    },
   });
+};
+
+const checkCreateAndPush = async (index, number, type) => {
+  const snapshot = await firebase
+    .database()
+    .ref(firebaseResults.resultPath(type, index))
+    .once("value");
+
+  const storedValue = snapshot.val();
+  if (storedValue && storedValue.number === number) {
+    return;
+  }
+
+  await _createNumberInDataBase(index, number, type);
+  if (storedValue !== null) {
+    console.log("Premio corregido en Firebase; no se reenvía push", index);
+    return;
+  }
+
+  if (
+    !index.includes("extracciones2cifra") &&
+    !index.includes("extracciones3cifra") &&
+    !index.includes("extracciones4cifra")
+  ) {
+    console.log("a push", index);
+    await _sendPush(index, number, type);
+  }
 };
 
 module.exports = checkPremios;

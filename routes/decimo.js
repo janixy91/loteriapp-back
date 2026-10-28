@@ -1,25 +1,21 @@
 var express = require("express");
 var router = express.Router();
-var request = require("request-promise-native");
-var fetch = require("node-fetch");
-
-var YEARNAVIDAD = 2025;
-var YEARNINO = YEARNAVIDAD + 1;
+var getPrizePerDecimo = require("../services/lottery/rtveProvider")
+  .getPrizePerDecimo;
+var isDrawStarted = require("../services/lottery/config").isDrawStarted;
 
 //  no se esta usando
 router.get("/", async function (req, res, next) {
   let data;
   if (inTime(req.query.type)) {
-    let response = null;
     try {
-      response = await checkOne(req.query.code, req.query.type);
+      const response = await checkOne(req.query.code, req.query.type);
+      const status = getStatus(response.status, response.total);
+      data = getData(response, status, req.query.amount);
     } catch (e) {
-      console.log("este es el error", JSON.stringify(e));
+      console.error("No se pudo comprobar el décimo:", e.message);
+      data = getDataUnavailable();
     }
-
-    console.log(response, "responses");
-    const status = getStatus(response.status, response.total);
-    data = getData(response, status, req.query.amount);
   } else {
     data = getDataPending();
   }
@@ -27,95 +23,62 @@ router.get("/", async function (req, res, next) {
 });
 
 router.post("/", async function (req, res, next) {
-  const decimos = req.body.data;
+  const decimos = Array.isArray(req.body.data) ? req.body.data : [];
   let data;
 
   if (inTime(req.query.type)) {
-    let total = 0;
-    let status;
-    let statusElPais;
-    for (let decimo of decimos) {
-      let response = null;
-      try {
-        response = await checkOne(decimo.number, req.query.type);
-        if (response) {
-          statusElPais = response.status;
-          status = getStatus(statusElPais, response.total, response.timestamp);
-          const premio = getQuantityByAmount(decimo.amount, response.total);
-          if (status === "pending") {
-            break;
-          } else if (status === "win") {
-            total += premio;
-          }
-          decimo.status = status;
-          decimo.statusElPais = statusElPais;
-          decimo.quantity = premio;
-          if (status !== "pending") {
-            status = total > 0 ? "win" : "lost";
-          }
-          const message = getMessage(status, total, statusElPais);
-          data = {
-            error: 0,
-            quantity: total,
-            message: message,
-            decimos: decimos,
-          };
-        } else {
-          data = getDataPending();
+    try {
+      let total = 0;
+      let sourceStatus = 0;
+      const responses = await Promise.all(
+        decimos.map((decimo) => checkOne(decimo.number, req.query.type))
+      );
+
+      responses.forEach((response, index) => {
+        const decimo = decimos[index];
+        const status = getStatus(response.status, response.total);
+        const premio = getQuantityByAmount(decimo.amount, response.total);
+
+        sourceStatus = Math.max(sourceStatus, Number(response.status) || 0);
+        if (status === "win") {
+          total += premio;
         }
-      } catch (e) {
-        console.log("error333333333333", JSON.stringify(e));
-      }
+
+        decimo.status = status;
+        decimo.statusElPais = response.status;
+        decimo.quantity = premio;
+      });
+
+      const status =
+        sourceStatus === 0 ? "pending" : total > 0 ? "win" : "lost";
+      data = {
+        error: 0,
+        quantity: total,
+        message: getMessage(status, total, sourceStatus),
+        decimos: decimos,
+      };
+    } catch (e) {
+      console.error("No se pudieron comprobar los décimos:", e.message);
+      data = getDataUnavailable(decimos);
     }
   } else {
-    data = getDataPending();
+    data = getDataPending(decimos);
   }
 
   res.json(data);
 });
 
 const inTime = (type) => {
-  return (
-    (type === "navidad" && new Date() > new Date(`${YEARNAVIDAD}/12/22`)) ||
-    (type === "nino" && new Date() > new Date(`${YEARNINO}/01/6`))
-  );
+  try {
+    return isDrawStarted(type);
+  } catch (error) {
+    return false;
+  }
 };
 
 const checkOne = async (number, type) => {
-  try {
-    const response = await fetch(
-      type === "navidad"
-        ? "https://api-loteria.pabloclementeperez.com/output/LoteriaNavidad.json"
-        : "https://api-loteria.pabloclementeperez.com/output/LoteriaElNino.json"
-    );
-
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-
-    const data = await response.json();
-    const premioEncontrado = buscarPremioPorNumero(data, number);
-    return {
-      total: premioEncontrado,
-      status: data.status,
-      timestamp: new Date(),
-    };
-  } catch (error) {
-    console.error("Hubo un problema con la solicitud Fetch:", error);
-    throw error; // Lanza el error para que pueda ser manejado por quien llame a la función
-  }
+  return getPrizePerDecimo(type, number);
 };
-
-// Función para buscar el premio por número
-function buscarPremioPorNumero(premios, numero, cantidadJugado = 20) {
-  const premio = premios[parseInt(numero)]; // Busca el premio por número
-  if (premio) {
-    const premioNumerico = parseInt(premio, 10); // Convierte el premio a número
-    const premioProporcional = premioNumerico / 10; // Calcula el premio proporcional
-    return premioProporcional; // Devuelve el premio proporcional
-  }
-  return 0; // Devuelve 0 si no se encuentra el premio
-}
 
 const getData = (response, status, amount) => {
   const premio = getQuantityByAmount(amount, response.total);
@@ -127,7 +90,7 @@ const getData = (response, status, amount) => {
   };
 };
 
-const getDataPending = () => {
+const getDataPending = (decimos = []) => {
   return {
     error: 0,
     quantity: 0,
@@ -136,7 +99,20 @@ const getDataPending = () => {
       text: "El sorteo no ha empezado",
       title: "¡Una cosa!",
     },
-    decimos: [],
+    decimos: decimos,
+  };
+};
+
+const getDataUnavailable = (decimos = []) => {
+  return {
+    error: 1,
+    quantity: 0,
+    status: "pending",
+    message: {
+      text: "No podemos actualizar los resultados ahora. Inténtalo de nuevo en unos minutos.",
+      title: "Resultados temporalmente no disponibles",
+    },
+    decimos: decimos,
   };
 };
 
@@ -145,25 +121,11 @@ const getQuantityByAmount = (amount, premio) => {
 };
 
 const getStatus = (resStatus, premio) => {
-  let isYear =
-    new Date().getFullYear() === YEARNAVIDAD ||
-    new Date().getFullYear() === YEARNINO;
-  // isYear = true;
-  let status;
-
-  console.log(premio, "resStatusresStatusresStatus");
-
-  if (!isYear) {
-    status = "pending";
-  } else if (premio > 0) {
-    status = "win";
-  } else if (premio === 0) {
-    status = "lost";
-  } else {
-    status = "pending";
+  const sourceStatus = Number(resStatus);
+  if (!Number.isFinite(sourceStatus) || sourceStatus === 0) {
+    return "pending";
   }
-
-  return status;
+  return premio > 0 ? "win" : "lost";
 };
 
 const getMessage = (status, premio, responseStatus) => {

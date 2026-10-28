@@ -39,7 +39,6 @@ app.use(function (req, res, next) {
   next(err);
 });
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;

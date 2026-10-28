@@ -1,122 +1,70 @@
+"use strict";
+
 var express = require("express");
 var router = express.Router();
-var firebase = require("firebase");
+var firebase = require("../services/firebase");
+var lotteryConfig = require("../services/lottery/config");
+var firebaseResults = require("../services/lottery/firebaseResults");
+var lotteryProvider = require("../services/lottery/rtveProvider");
 
-router.get("/", async function (req, res, next) {
-  const environment = process.env.environment === "pro" ? "" : "-dev";
-  console.log(environment, "environment");
+router.get("/status", async function (req, res) {
+  const type = req.query.type;
+  try {
+    const config = lotteryConfig.getDrawConfig(type);
+    if (!lotteryConfig.isDrawStarted(type)) {
+      res.json({
+        type: type,
+        year: config.year,
+        status: 0,
+        source: "rtve",
+        drawAt: config.drawAt.toISOString(),
+      });
+      return;
+    }
 
-  firebase
-    .database()
-    .ref(`/${req.query.type}${environment}`)
-    .once("value")
-    .then(async function (snapshot) {
-      const values = snapshot.val();
-      if (values) {
-        values.reintegros = {
-          number: `${values.reintegros1 ? values.reintegros1.number : "-"}, ${
-            values.reintegros2 ? values.reintegros2.number : "-"
-          }, ${values.reintegros3 ? values.reintegros3.number : "-"}`,
-        };
-        values.extracciones3cifras = {
-          number: `${
-            values.extracciones3cifras1
-              ? values.extracciones3cifras1.number
-              : "-"
-          }, ${
-            values.extracciones3cifras2
-              ? values.extracciones3cifras2.number
-              : "-"
-          }, ${
-            values.extracciones3cifras3
-              ? values.extracciones3cifras3.number
-              : "-"
-          }, ${
-            values.extracciones3cifras4
-              ? values.extracciones3cifras4.number
-              : "-"
-          }, ${
-            values.extracciones3cifras5
-              ? values.extracciones3cifras5.number
-              : "-"
-          }, ${
-            values.extracciones3cifras6
-              ? values.extracciones3cifras6.number
-              : "-"
-          }, ${
-            values.extracciones3cifras7
-              ? values.extracciones3cifras7.number
-              : "-"
-          }, ${
-            values.extracciones3cifras8
-              ? values.extracciones3cifras8.number
-              : "-"
-          }, ${
-            values.extracciones3cifras9
-              ? values.extracciones3cifras9.number
-              : "-"
-          }, ${
-            values.extracciones3cifras10
-              ? values.extracciones3cifras10.number
-              : "-"
-          }, ${
-            values.extracciones3cifras11
-              ? values.extracciones3cifras11.number
-              : "-"
-          }, ${
-            values.extracciones3cifras12
-              ? values.extracciones3cifras12.number
-              : "-"
-          }, ${
-            values.extracciones3cifras13
-              ? values.extracciones3cifras13.number
-              : "-"
-          }, ${
-            values.extracciones3cifras14
-              ? values.extracciones3cifras14.number
-              : "-"
-          }`,
-        };
-
-        values.extracciones4cifras = {
-          number: `${
-            values.extracciones4cifras1
-              ? values.extracciones4cifras1.number
-              : "-"
-          }, ${
-            values.extracciones4cifras2
-              ? values.extracciones4cifras2.number
-              : "-"
-          }`,
-        };
-
-        values.extracciones2cifras = {
-          number: `${
-            values.extracciones2cifras1
-              ? values.extracciones2cifras1.number
-              : "-"
-          }, ${
-            values.extracciones2cifras2
-              ? values.extracciones2cifras2.number
-              : "-"
-          }, ${
-            values.extracciones2cifras3
-              ? values.extracciones2cifras3.number
-              : "-"
-          }, ${
-            values.extracciones2cifras4
-              ? values.extracciones2cifras4.number
-              : "-"
-          }, ${
-            values.extracciones2cifras5
-              ? values.extracciones2cifras5.number
-              : "-"
-          }`,
-        };
-      }
-
-      res.json(values);
+    const snapshot = await lotteryProvider.getSnapshot(type);
+    res.json({
+      type: snapshot.type,
+      year: snapshot.year,
+      status: snapshot.status,
+      source: snapshot.source,
+      fetchedAt: snapshot.fetchedAt,
+      stale: Boolean(snapshot.stale),
+      awardedNumbers: Object.keys(snapshot.prizes).length,
     });
+  } catch (error) {
+    res.status(503).json({ error: 1, message: error.message });
+  }
+});
+
+router.get("/", async function (req, res) {
+  const type = req.query.type;
+  try {
+    const config = lotteryConfig.getDrawConfig(type);
+    if (!lotteryConfig.isDrawStarted(type)) {
+      res.json({});
+      return;
+    }
+
+    const snapshot = await firebase
+      .database()
+      .ref(firebaseResults.resultsRootPath(type))
+      .once("value");
+    const values = snapshot.val();
+
+    if (!values || !values._meta || values._meta.year !== config.year) {
+      res.json({});
+      return;
+    }
+
+    res.json(firebaseResults.formatStoredResults(type, values));
+  } catch (error) {
+    console.error("No se pudieron cargar los premios de Firebase:", error.message);
+    res.status(503).json({
+      error: 1,
+      message: "Premios temporalmente no disponibles",
+    });
+  }
 });
 
 module.exports = router;
