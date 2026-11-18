@@ -237,6 +237,30 @@ test("el simulador de Navidad genera el mismo contrato HTML que RTVE", () => {
   );
 });
 
+test("el simulador automático revela los premios de uno en uno", () => {
+  const config = withEnvironment({ LOTTERY_NAVIDAD_YEAR: "2026" }, () =>
+    getDrawConfig("navidad")
+  );
+  simulator.setScenario("navidad", "automatic");
+  simulator.setRevealedCount("navidad", 2);
+
+  const summary = parseSummary(
+    simulator.renderSummaryPage("navidad", "automatic", config),
+    config
+  );
+  assert.equal(summary.numero1, 79432);
+  assert.equal(summary.numero2, 12590);
+  assert.equal(summary.numero3, -1);
+  assert.deepEqual(
+    parseNumbersPage(
+      simulator.renderNumbersPage("navidad", "automatic", 10000, config)
+    ),
+    { 12590: 1250000 }
+  );
+
+  simulator.setScenario("navidad", "pending");
+});
+
 test("el escenario completo de El Niño cubre todas las terminaciones", () => {
   const config = withEnvironment({ LOTTERY_NINO_YEAR: "2027" }, () =>
     getDrawConfig("nino")

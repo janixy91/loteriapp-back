@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const express = require("express");
 
 const lotteryConfig = require("../services/lottery/config");
+const automaticSimulator = require("../services/lottery/automaticSimulator");
 const firebaseResults = require("../services/lottery/firebaseResults");
 const provider = require("../services/lottery/rtveProvider");
 const simulator = require("../services/lottery/simulator");
@@ -114,17 +115,25 @@ router.get("/api/state", function (req, res) {
   const ninoConfig = lotteryConfig.getDrawConfig("nino");
   res.json({
     enabled: true,
-    pushesEnabled: false,
+    pushesEnabled: process.env.PUSH_NOTIFICATIONS_ENABLED === "true",
+    pushesConfigured: Boolean(
+      process.env.ONESIGNAL_USER_AUTH_KEY &&
+      process.env.ONESIGNAL_APP_AUTH_KEY &&
+      process.env.ONESIGNAL_APP_ID &&
+      process.env.ONESIGNAL_TEST_PLAYER_IDS
+    ),
     types: {
       navidad: {
         year: navidadConfig.year,
         scenario: simulator.getScenario("navidad"),
         firebasePath: firebaseResults.resultsRootPath("navidad"),
+        automatic: automaticSimulator.publicState("navidad"),
       },
       nino: {
         year: ninoConfig.year,
         scenario: simulator.getScenario("nino"),
         firebasePath: firebaseResults.resultsRootPath("nino"),
+        automatic: automaticSimulator.publicState("nino"),
       },
     },
   });
@@ -132,6 +141,7 @@ router.get("/api/state", function (req, res) {
 
 router.post("/api/scenario", authorizedOnly, function (req, res) {
   try {
+    automaticSimulator.reset(req.body.type);
     const scenario = simulator.setScenario(req.body.type, req.body.scenario);
     res.json({ ok: true, type: req.body.type, scenario });
   } catch (error) {
@@ -142,6 +152,7 @@ router.post("/api/scenario", authorizedOnly, function (req, res) {
 router.post("/api/run", authorizedOnly, async function (req, res) {
   try {
     const type = req.body.type;
+    automaticSimulator.reset(type);
     if (req.body.scenario) {
       simulator.setScenario(type, req.body.scenario);
     }
@@ -163,6 +174,37 @@ router.post("/api/run", authorizedOnly, async function (req, res) {
   }
 });
 
+router.post("/api/automatic/start", authorizedOnly, async function (req, res) {
+  try {
+    const type = req.body.type;
+    const automatic = await automaticSimulator.start(
+      type,
+      simulatedConfig(type, req)
+    );
+    res.json({
+      ok: true,
+      type,
+      firebasePath: firebaseResults.resultsRootPath(type),
+      pushesEnabled: process.env.PUSH_NOTIFICATIONS_ENABLED === "true",
+      automatic,
+    });
+  } catch (error) {
+    res.status(422).json({ error: 1, message: error.message });
+  }
+});
+
+router.post("/api/automatic/stop", authorizedOnly, function (req, res) {
+  try {
+    res.json({
+      ok: true,
+      type: req.body.type,
+      automatic: automaticSimulator.stop(req.body.type),
+    });
+  } catch (error) {
+    res.status(400).json({ error: 1, message: error.message });
+  }
+});
+
 router.get("/api/firebase", authorizedOnly, async function (req, res) {
   try {
     res.json(await simulatorRunner.read(req.query.type));
@@ -173,6 +215,7 @@ router.get("/api/firebase", authorizedOnly, async function (req, res) {
 
 router.post("/api/reset", authorizedOnly, async function (req, res) {
   try {
+    automaticSimulator.reset(req.body.type);
     await simulatorRunner.clear(req.body.type);
     provider.clearCache();
     simulator.setScenario(req.body.type, "pending");

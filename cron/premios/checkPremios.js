@@ -31,16 +31,18 @@ const getOneSignalClient = () => {
   return myClient;
 };
 
-const checkPremios = async function (type) {
-  const response = await getPremios(type);
+const checkPremios = async function (type, options = {}) {
+  const response = await getPremios(type, options);
   if (response.status !== 0) {
-    await prepareDrawStorage(type);
+    await prepareDrawStorage(type, options);
     if (type === "navidad") {
       await _checkNavidad(response, type);
     } else {
       await _checkNino(response, type);
     }
+    await updateDrawMetadata(type, response, options);
   }
+  return response;
 };
 
 const _checkNavidad = async (response, type) => {
@@ -451,12 +453,12 @@ const _getMessage = (numberIndex, number) => {
   }
 };
 
-const getPremios = async (type) => {
-  return getLegacySummary(type);
+const getPremios = async (type, options = {}) => {
+  return getLegacySummary(type, options.providerOptions || {});
 };
 
-const prepareDrawStorage = async (type) => {
-  const config = getDrawConfig(type);
+const prepareDrawStorage = async (type, options = {}) => {
+  const config = options.config || getDrawConfig(type);
   const root = firebaseResults.resultsRootPath(type);
   const reference = firebase.database().ref(root);
   const snapshot = await reference.once("value");
@@ -469,10 +471,24 @@ const prepareDrawStorage = async (type) => {
   await reference.set({
     _meta: {
       year: config.year,
-      source: "rtve",
+      source: options.source || "rtve",
       initializedAt: new Date().toISOString(),
     },
   });
+};
+
+const updateDrawMetadata = async (type, response, options = {}) => {
+  const config = options.config || getDrawConfig(type);
+  await firebase
+    .database()
+    .ref(`${firebaseResults.resultsRootPath(type)}/_meta`)
+    .update({
+      year: config.year,
+      source: options.source || "rtve",
+      status: response.status,
+      updatedAt: new Date().toISOString(),
+      notificationsEnabled: process.env.PUSH_NOTIFICATIONS_ENABLED === "true",
+    });
 };
 
 const checkCreateAndPush = async (index, number, type) => {

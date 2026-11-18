@@ -12,7 +12,7 @@ html(lang='es')
           p.eyebrow Loteriapp · entorno de desarrollo
           h1 Simulador del sorteo
           p.hero__copy Reproduce la estructura que lee el backend de RTVE y permite comprobar el recorrido completo hasta Firebase.
-        span.badge OneSignal bloqueado
+        span#push-badge.badge Comprobando notificaciones…
 
       form.panel.credentials(onsubmit='return false')
         div
@@ -21,6 +21,25 @@ html(lang='es')
         label.token-field
           span Token del simulador
           input#token(type='password', autocomplete='off', placeholder='Pega aquí LOTTERY_SIMULATOR_TOKEN')
+
+      section.panel.automatic
+        div.automatic__copy
+          p.eyebrow Prueba del día del sorteo
+          h2 Simulación automática cada 2 minutos
+          p Publica el primer premio al arrancar y después uno nuevo cada dos minutos. Cada lectura pasa por el flujo real: fuente mock, backend, Firebase y notificación al móvil de pruebas.
+        dl.automatic__metrics
+          div
+            dt Progreso
+            dd#automatic-progress —
+          div
+            dt Próximo premio
+            dd#automatic-countdown —
+          div
+            dt Último número
+            dd#automatic-last —
+        div.automatic__actions
+          button#automatic-start.primary(type='button') Empezar simulación
+          button#automatic-stop.secondary(type='button', disabled) Detener
 
       section.workspace
         aside.panel.controls

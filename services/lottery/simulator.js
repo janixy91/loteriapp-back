@@ -1,10 +1,22 @@
 "use strict";
 
-const SCENARIOS = ["pending", "partial", "complete", "changed", "broken"];
+const SCENARIOS = [
+  "pending",
+  "partial",
+  "complete",
+  "changed",
+  "broken",
+  "automatic",
+];
 
 const scenarioByType = {
   navidad: "pending",
   nino: "pending",
+};
+
+const revealedByType = {
+  navidad: 0,
+  nino: 0,
 };
 
 const FIXTURES = {
@@ -111,12 +123,32 @@ function setScenario(type, scenario) {
     throw new Error(`Escenario del simulador no válido: ${scenario}`);
   }
   scenarioByType[type] = scenario;
+  if (scenario !== "automatic") {
+    revealedByType[type] = 0;
+  }
   return scenario;
+}
+
+function getRevealedCount(type) {
+  validateType(type);
+  return revealedByType[type];
+}
+
+function setRevealedCount(type, count) {
+  validateType(type);
+  const total = Object.keys(FIXTURES[type]).length;
+  if (!Number.isInteger(count) || count < 0 || count > total) {
+    throw new Error(`Número de premios revelados no válido: ${count}`);
+  }
+  revealedByType[type] = count;
+  return count;
 }
 
 function resetScenarios() {
   scenarioByType.navidad = "pending";
   scenarioByType.nino = "pending";
+  revealedByType.navidad = 0;
+  revealedByType.nino = 0;
 }
 
 function summaryFor(type, scenario, config) {
@@ -130,9 +162,12 @@ function summaryFor(type, scenario, config) {
     }
   }
 
-  const visibleKeys = scenario === "partial" || scenario === "changed"
-    ? config.summaryKeys.slice(0, 3)
-    : config.summaryKeys;
+  let visibleKeys = config.summaryKeys;
+  if (scenario === "partial" || scenario === "changed") {
+    visibleKeys = config.summaryKeys.slice(0, 3);
+  } else if (scenario === "automatic") {
+    visibleKeys = config.summaryKeys.slice(0, getRevealedCount(type));
+  }
 
   visibleKeys.forEach((key) => {
     summary[key] = values[key];
@@ -200,7 +235,7 @@ function prizeForNumber(type, number, scenario, config) {
     }
   });
 
-  if (type === "nino" && scenario === "complete") {
+  if (type === "nino" && ["complete", "automatic"].includes(scenario)) {
     const groups = [
       { prefix: "Extraccion_4_cifras_", count: 2, width: 4, amount: 3500 },
       { prefix: "Extraccion_3_cifras_", count: 14, width: 3, amount: 1000 },
@@ -248,6 +283,7 @@ function renderNumbersPage(type, scenario, start, config) {
 
 module.exports = {
   SCENARIOS,
+  getRevealedCount,
   getScenario,
   isActive,
   isEnabled,
@@ -255,6 +291,7 @@ module.exports = {
   renderSummaryPage,
   requestOrigin,
   resetScenarios,
+  setRevealedCount,
   setScenario,
   sourceRoot,
   summaryFor,

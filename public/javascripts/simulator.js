@@ -8,6 +8,12 @@
     run: document.querySelector("#run"),
     inspect: document.querySelector("#inspect"),
     reset: document.querySelector("#reset"),
+    automaticStart: document.querySelector("#automatic-start"),
+    automaticStop: document.querySelector("#automatic-stop"),
+    automaticProgress: document.querySelector("#automatic-progress"),
+    automaticCountdown: document.querySelector("#automatic-countdown"),
+    automaticLast: document.querySelector("#automatic-last"),
+    pushBadge: document.querySelector("#push-badge"),
     output: document.querySelector("#output"),
     year: document.querySelector("#year"),
     firebasePath: document.querySelector("#firebase-path"),
@@ -77,7 +83,48 @@
       toast(error.message, true);
     } finally {
       button.disabled = false;
+      renderAutomatic();
     }
+  }
+
+  function countdown(nextAt) {
+    if (!nextAt) return "—";
+    const seconds = Math.max(0, Math.ceil((new Date(nextAt).getTime() - Date.now()) / 1000));
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+  }
+
+  function renderAutomatic() {
+    if (!state) return;
+    const automatic = state.types[elements.type.value].automatic;
+    elements.automaticProgress.textContent = automatic.total
+      ? `${automatic.revealed} / ${automatic.total}`
+      : "Sin iniciar";
+    elements.automaticCountdown.textContent = automatic.running
+      ? countdown(automatic.nextAt)
+      : automatic.completedAt
+        ? "Finalizado"
+        : "—";
+    elements.automaticLast.textContent = automatic.lastPrize
+      ? automatic.lastPrize.number
+      : "—";
+    elements.automaticStart.disabled = automatic.running;
+    elements.automaticStop.disabled = !automatic.running;
+  }
+
+  function renderPushState() {
+    if (!state) return;
+    elements.pushBadge.classList.toggle(
+      "ready",
+      state.pushesEnabled && state.pushesConfigured
+    );
+    elements.pushBadge.classList.toggle(
+      "warning",
+      !state.pushesEnabled || !state.pushesConfigured
+    );
+    elements.pushBadge.textContent = state.pushesEnabled && state.pushesConfigured
+      ? "Notificaciones listas"
+      : "Notificaciones pendientes";
   }
 
   function renderState() {
@@ -92,6 +139,8 @@
     elements.sourceLink.href = `/simulador/fuente/${sourceName(type)}/`;
     elements.apiLink.href = `/premios?type=${type}`;
     selectScenario(current.scenario);
+    renderAutomatic();
+    renderPushState();
   }
 
   async function loadState() {
@@ -135,6 +184,32 @@
     });
   });
 
+  elements.automaticStart.addEventListener("click", function () {
+    withBusy(elements.automaticStart, async function () {
+      const type = elements.type.value;
+      const value = await request("/simulador/api/automatic/start", {
+        method: "POST",
+        body: JSON.stringify({ type }),
+      });
+      await loadState();
+      print(value);
+      toast("Primer premio publicado. El siguiente llegará en 2 minutos.");
+    });
+  });
+
+  elements.automaticStop.addEventListener("click", function () {
+    withBusy(elements.automaticStop, async function () {
+      const type = elements.type.value;
+      const value = await request("/simulador/api/automatic/stop", {
+        method: "POST",
+        body: JSON.stringify({ type }),
+      });
+      await loadState();
+      print(value);
+      toast("Simulación automática detenida.");
+    });
+  });
+
   elements.inspect.addEventListener("click", function () {
     withBusy(elements.inspect, async function () {
       const value = await request(`/simulador/api/firebase?type=${elements.type.value}`);
@@ -162,4 +237,9 @@
     print({ error: error.message });
     toast(error.message, true);
   });
+
+  window.setInterval(renderAutomatic, 1000);
+  window.setInterval(function () {
+    loadState().catch(function () {});
+  }, 10000);
 })();
