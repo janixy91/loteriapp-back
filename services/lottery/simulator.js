@@ -189,6 +189,12 @@ function renderSummaryPage(type, scenario, config) {
   }
 
   const summary = summaryFor(type, scenario, config);
+  const automaticRefresh =
+    scenario === "automatic" ? '<meta http-equiv="refresh" content="10">' : "";
+  const notice =
+    scenario === "automatic"
+      ? `Simulación automática en curso: ${getRevealedCount(type)} de ${config.summaryKeys.length} resultados publicados. Esta página se actualiza sola.`
+      : "Simulador de Loteriapp. No es una página oficial de RTVE.";
   const items = config.summaryGroups
     .map((group) => {
       const values = group.keys
@@ -205,6 +211,7 @@ function renderSummaryPage(type, scenario, config) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    ${automaticRefresh}
     <title>${config.label} ${config.year} · Fuente simulada</title>
     <style>
       body{margin:0;background:#f4f1ea;color:#182235;font:16px system-ui,sans-serif}
@@ -217,7 +224,7 @@ function renderSummaryPage(type, scenario, config) {
   <body>
     <header><strong>Fuente de pruebas con estructura compatible con RTVE</strong></header>
     <main>
-      <p class="notice">Simulador de Loteriapp. No es una página oficial de RTVE.</p>
+      <p class="notice">${notice}</p>
       <h1>${config.label} ${config.year}</h1>
       <ol id="${config.summaryContainerId}">${items}</ol>
     </main>
